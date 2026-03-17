@@ -43,6 +43,7 @@ public class CustomPropertyAttributeConverter implements AttributeConverter<Cust
             }
         }
 
+        log.warn("Invalid JSON structure, returning raw data: {}", dbData);
         return null;
     }
 }

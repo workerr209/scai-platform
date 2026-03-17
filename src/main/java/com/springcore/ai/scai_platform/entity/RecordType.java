@@ -11,6 +11,7 @@ import lombok.ToString;
 import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 
+import java.io.Serial;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -26,6 +27,7 @@ import java.util.List;
 @NamedQuery(name = "AcRecordtype.findAll", query = "SELECT a FROM RecordType a")
 @org.hibernate.annotations.Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
 public class RecordType extends GenericPersistentObject {
+    @Serial
     private static final long serialVersionUID = 1L;
 
     @Id

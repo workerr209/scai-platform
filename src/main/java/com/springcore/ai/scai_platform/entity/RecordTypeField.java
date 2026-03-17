@@ -173,9 +173,4 @@ public class RecordTypeField extends GenericPersistentObject {
     private Integer visibleLines;
     private Integer visibleWidth;
 
-//	@JsonIgnore
-//	@ManyToOne
-//    @JoinColumn(name="parent_id", nullable=false, updatable = false, insertable = false)
-//    private AcRecordtype acRecordtype;
-
 }
