@@ -4,16 +4,15 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.MalformedJwtException;
-import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
 import io.jsonwebtoken.security.SignatureException;
+import jakarta.annotation.PostConstruct;
 import lombok.Data;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
+import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
-import java.security.Key;
 import java.util.Date;
 
 @Data
@@ -29,7 +28,7 @@ public class JwtTokenProvider {
     @Value("${jwt.refresh-expiration-in-ms}")
     private long refreshTokenExpirationMs;
 
-    private Key signingKey;
+    private SecretKey signingKey;
 
     @PostConstruct
     public void init() {
@@ -48,12 +47,11 @@ public class JwtTokenProvider {
     private String buildToken(String subject, long expirationMillis) {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + expirationMillis);
-
         return Jwts.builder()
-                .setSubject(subject)
-                .setIssuedAt(now)
-                .setExpiration(expiryDate)
-                .signWith(signingKey, SignatureAlgorithm.HS256)
+                .subject(subject)
+                .issuedAt(now)
+                .expiration(expiryDate)
+                .signWith(signingKey)
                 .compact();
     }
 
@@ -78,11 +76,11 @@ public class JwtTokenProvider {
     }
 
     private Claims parseClaims(String token) {
-        return Jwts.parserBuilder()
-                .setSigningKey(signingKey)
+        return Jwts.parser() // เปลี่ยนจาก parserBuilder() เป็น parser()
+                .verifyWith(signingKey) // เปลี่ยนจาก setSigningKey() เป็น verifyWith()
                 .build()
-                .parseClaimsJws(token)
-                .getBody();
+                .parseSignedClaims(token) // เปลี่ยนจาก parseClaimsJws() เป็น parseSignedClaims()
+                .getPayload(); // เปลี่ยนจาก getBody() เป็น getPayload()
     }
 
 }
