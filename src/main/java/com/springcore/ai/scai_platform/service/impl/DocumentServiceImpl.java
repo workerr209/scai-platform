@@ -27,7 +27,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -127,15 +126,15 @@ public class DocumentServiceImpl implements DocumentService {
         Employee employeeLogin = UserContext.getEmployee();
         assert employeeLogin != null;
 
-
+        Date today = new Date();
         int maxStep = 3; // Todo Get Max Step From Config
         doc.setDocumentStatus(DocumentStatus.DRAFT);
 
         FlowDoc flow = new FlowDoc();
         flow.setDocNo(doc.getDocumentNo());
         flow.setDocType(doc.getDocumentType());
-        flow.setCreatedDate(LocalDateTime.now());
-        flow.setRequestedDate(LocalDateTime.now());
+        flow.setCreatedDate(today);
+        flow.setRequestedDate(today);
         flow.setActiveStep(0);
         flow.setLastStep(BigDecimal.valueOf(maxStep));
         flow.setInactive(BigDecimal.ZERO);
@@ -161,7 +160,7 @@ public class DocumentServiceImpl implements DocumentService {
             step.setMailstat(BigDecimal.ZERO);
             step.setReqCancel(0);
             step.setActionType("REQUEST");
-            step.setActionDate(LocalDateTime.now());
+            step.setActionDate(today);
             steps.add(step);
 
             if (employeeLogin.getId().compareTo(emId) != 0) {
@@ -235,7 +234,7 @@ public class DocumentServiceImpl implements DocumentService {
 
         flowDoc.setDocId(docId);
         flowDoc.setDocNo(documentNo);
-        flowDoc.setCreatedDate(LocalDateTime.now());
+        flowDoc.setCreatedDate(new Date());
         if (flowDoc.getSteps() != null) {
             FlowDocStep currentStep = flowDoc.getSteps().stream()
                     .filter(s -> s.getStepno() == 0)

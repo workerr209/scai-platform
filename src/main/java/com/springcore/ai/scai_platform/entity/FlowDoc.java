@@ -7,6 +7,7 @@ import lombok.Getter;
 import lombok.Setter;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Date;
 import java.util.List;
 
 @Entity
@@ -48,7 +49,7 @@ public class FlowDoc {
     private int activeStep;
 
     @Column(name = "createddate")
-    private LocalDateTime createdDate;
+    private Date createdDate;
 
     @Column(name = "docid")
     private Long docId;
@@ -90,13 +91,13 @@ public class FlowDoc {
     private Long owner;
 
     @Column(name = "requesteddate")
-    private LocalDateTime requestedDate;
+    private Date requestedDate;
 
     @Column(name = "reqcancel")
     private BigDecimal reqCancel;
 
     @Column(name = "effDate")
-    private LocalDateTime effDate;
+    private Date effDate;
 
     @Column(name = "tagsFlowContent", length = 1000)
     private String tagsFlowContent;

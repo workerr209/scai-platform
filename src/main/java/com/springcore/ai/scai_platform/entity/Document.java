@@ -1,6 +1,5 @@
 package com.springcore.ai.scai_platform.entity;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -95,22 +94,16 @@ public class Document extends GenericPersistentObject {
         return documentStatus.getSeverity();
     }
 
-    @JsonFormat(shape = JsonFormat.Shape.NUMBER_INT)
     private Date dateWork;
 
-    @JsonFormat(shape = JsonFormat.Shape.NUMBER_INT)
     private Date dateTo;
 
-    @JsonFormat(shape = JsonFormat.Shape.NUMBER_INT)
     private Date punI_D;
 
-    @JsonFormat(shape = JsonFormat.Shape.NUMBER_INT)
     private Date punI_T;
 
-    @JsonFormat(shape = JsonFormat.Shape.NUMBER_INT)
     private Date punO_D;
 
-    @JsonFormat(shape = JsonFormat.Shape.NUMBER_INT)
     private Date punO_T;
 
     private String remark;
