@@ -13,7 +13,9 @@ public interface RecordTypeService {
 
 	Boolean reloadAllRecordType();
 
-	Optional<RecordType> getRecordType(String recordTypeName);
+	Optional<RecordType> getRecordTypeOptional(String recordTypeName);
+
+	RecordType getRecordType(String recordTypeName);
 
 	Boolean reloadRecordTypeByName(String recordTypeName);
 

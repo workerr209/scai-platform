@@ -54,7 +54,7 @@ public class AdminServiceImpl implements AdminService {
     @Override
     public <T> List<T> findDataOfRecordTypeByCriteria(String recordTypeName, MultiValueMap<String, String> param) {
 
-        Optional<RecordType> recordTypeOpt = this.recordTypeService.getRecordType(recordTypeName);
+        Optional<RecordType> recordTypeOpt = this.recordTypeService.getRecordTypeOptional(recordTypeName);
         if (recordTypeOpt.isPresent()) {
             log.debug("Query recordType = {}", recordTypeOpt.get().getName());
             final QueryExecutorFactory queryExecutorFactory = new QueryExecutorFactory(em, recordTypeOpt.get(), param);
@@ -69,7 +69,7 @@ public class AdminServiceImpl implements AdminService {
     @Override
     @Transactional
     public int deleteDataOfRecordTypeByIds(String recordTypeName, FormMasterDeleteDTO param) {
-        Optional<RecordType> recordType = this.recordTypeService.getRecordType(recordTypeName);
+        Optional<RecordType> recordType = this.recordTypeService.getRecordTypeOptional(recordTypeName);
         return recordType.map(acRecordtype -> this.adminRepository.deleteDataOfRecordTypeByIds(acRecordtype, param.getIds())).orElse(0);
 
     }

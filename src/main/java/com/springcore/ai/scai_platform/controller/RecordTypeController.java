@@ -26,7 +26,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 @Slf4j
 @RestController
@@ -61,11 +60,8 @@ public class RecordTypeController {
 	}
 
 	@GetMapping("/search/{recordTypeName}")
-	public Flowable<RecordType> searchRecordTypeByName(@PathVariable @Valid String recordTypeName) {
-
-		return Flowable.just(recordTypeService.getRecordType(recordTypeName))
-				.filter(Optional::isPresent)
-				.map(Optional::get);
+	public ResponseEntity<RecordType> searchRecordTypeByName(@PathVariable @Valid String recordTypeName) {
+		return ResponseEntity.ok(recordTypeService.getRecordType(recordTypeName));
 	}
 
 	@GetMapping("/data/search/{recordTypeName}")

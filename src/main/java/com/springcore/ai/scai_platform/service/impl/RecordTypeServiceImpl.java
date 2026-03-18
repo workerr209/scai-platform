@@ -39,13 +39,18 @@ public class RecordTypeServiceImpl implements RecordTypeService {
 	}
 	
 	@Override
-	public Optional<RecordType> getRecordType(String recordTypeName) {
+	public Optional<RecordType> getRecordTypeOptional(String recordTypeName) {
+		return Optional.of(getRecordType(recordTypeName));
+	}
+
+	@Override
+	public RecordType getRecordType(String recordTypeName) {
 		ensureLoadAcRecordType(recordTypeName);
 		RecordType acRecordtype = this.allRecordType.get(recordTypeName);
 		Assert.notNull(acRecordtype, "RecordType : " + recordTypeName + " not found");
-		return Optional.of(acRecordtype);
+		return acRecordtype;
 	}
-	
+
 	@Override
 	public Boolean reloadRecordTypeByName(String recordTypeName) {
 		final RecordType removed = this.allRecordType.remove(recordTypeName);
@@ -63,7 +68,7 @@ public class RecordTypeServiceImpl implements RecordTypeService {
 
 	@Override
 	public Flowable<Class<?>> loadClassFromRecordTypeName(String recordTypeName) {
-		return Flowable.just(getRecordType(recordTypeName))
+		return Flowable.just(getRecordTypeOptional(recordTypeName))
 				.filter(Optional::isPresent)
 				.map(Optional::get)
 				.map(RecordType::getClassName)
