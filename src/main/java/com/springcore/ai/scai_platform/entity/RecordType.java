@@ -24,7 +24,7 @@ import java.util.List;
 @EqualsAndHashCode(callSuper = false)
 @Entity
 @Table(name = "ac_recordtype")
-@NamedQuery(name = "AcRecordtype.findAll", query = "SELECT a FROM RecordType a")
+@NamedQuery(name = "RecordType.findAll", query = "SELECT a FROM RecordType a")
 @org.hibernate.annotations.Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
 public class RecordType extends GenericPersistentObject {
     @Serial
@@ -83,16 +83,7 @@ public class RecordType extends GenericPersistentObject {
     private boolean inactive;
 
     private boolean custom;
-
-//    @Column(name = "SCHEMA_FIELD"/*, columnDefinition = "boolean default false "*/)
     private boolean schemaField;
-
-	/*enum TypeOfRecordType {
-		SCHEMA, CUSTOM;
-	}
-
-	@Enumerated(EnumType.ORDINAL)
-	private TypeOfRecordType typeOfRecordType*/
 
     private String tableName;
 
@@ -146,13 +137,6 @@ public class RecordType extends GenericPersistentObject {
     private String valstr;
 
     @ToString.Exclude
-    //@OneToMany(fetch = FetchType.EAGER, mappedBy="acRecordtype", cascade = CascadeType.ALL)
-    //@OneToMany(fetch = FetchType.EAGER, cascade = { CascadeType.PERSIST, CascadeType.MERGE })
-    //@JoinColumn(name="parent_id", nullable=false)
-
-    /*@OneToMany(fetch = FetchType.EAGER, cascade = CascadeType.ALL, orphanRemoval = true)
-    @JoinColumn(name = "parent_id")
-    private List<RecordTypeField> recordtypeFields = new ArrayList<>();*/
     @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn(name = "parent_id")
     @BatchSize(size = 20)
