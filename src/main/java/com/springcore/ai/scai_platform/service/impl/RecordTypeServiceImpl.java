@@ -142,7 +142,7 @@ public class RecordTypeServiceImpl implements RecordTypeService {
 			return recordTypes;
 		} catch (Exception e) {
 			sw.stop();
-			log.error("CRITICAL ERROR DURING FETCH: ", e); // ดูว่า e.getCause() คืออะไร
+			log.error("CRITICAL ERROR DURING FETCH: ", e);
 			throw e;
 		}
 	}
@@ -158,7 +158,7 @@ public class RecordTypeServiceImpl implements RecordTypeService {
 			return recordTypes;
 		} catch (Exception e) {
 			sw.stop();
-			log.error("CRITICAL ERROR DURING FETCH: ", e); // ดูว่า e.getCause() คืออะไร
+			log.error("CRITICAL ERROR DURING FETCH: ", e);
 			throw e;
 		}
 	}
