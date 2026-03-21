@@ -4,6 +4,7 @@ import com.springcore.ai.scai_platform.entity.RecordType;
 import com.springcore.ai.scai_platform.entity.RecordTypeField;
 import com.springcore.ai.scai_platform.properties.ApplicationProperties;
 import com.springcore.ai.scai_platform.repository.api.RecordTypeRepository;
+import com.springcore.ai.scai_platform.service.api.DynamicClassService;
 import com.springcore.ai.scai_platform.service.api.RecordTypeService;
 import io.reactivex.rxjava3.core.Flowable;
 import lombok.extern.slf4j.Slf4j;
@@ -13,6 +14,7 @@ import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
+import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.StopWatch;
 import org.springframework.util.StringUtils;
 
@@ -29,14 +31,16 @@ public class RecordTypeServiceImpl implements RecordTypeService {
 	private final Map<Pageable, Map<String, RecordType>> mapRecordTypeByPage;
 	private final RecordTypeRepository recordTypeRepository;
 	private final ApplicationProperties applicationProperties;
+	private final DynamicClassService dynamicClassService;
 
 	@Autowired
-	public RecordTypeServiceImpl(RecordTypeRepository recordTypeRepository, ApplicationProperties applicationProperties) {
+	public RecordTypeServiceImpl(RecordTypeRepository recordTypeRepository, ApplicationProperties applicationProperties, DynamicClassService dynamicClassService) {
 		this.applicationProperties = applicationProperties;
 		this.recordTypeRepository = recordTypeRepository;
-		allRecordType = new ConcurrentHashMap<>(applicationProperties.getGeneral().getRecordtypeMapInitSize());
-		mapRecordTypeByPage = new ConcurrentHashMap<>(applicationProperties.getGeneral().getRecordtypeMapInitSize());
-	}
+		this.allRecordType = new ConcurrentHashMap<>(applicationProperties.getGeneral().getRecordtypeMapInitSize());
+		this.mapRecordTypeByPage = new ConcurrentHashMap<>(applicationProperties.getGeneral().getRecordtypeMapInitSize());
+        this.dynamicClassService = dynamicClassService;
+    }
 	
 	@Override
 	public Optional<RecordType> getRecordTypeOptional(String recordTypeName) {
@@ -59,6 +63,10 @@ public class RecordTypeServiceImpl implements RecordTypeService {
 					.stream()
 					.map(RecordTypeField::getName)
 					.forEach(this.allRecordType::remove);
+			String className = removed.getClassName();
+			if (!StringUtils.hasLength(className)) {
+				dynamicClassService.reloadMappingClass(removed);
+			}
 		} else {
 			return false;
 		}
@@ -75,6 +83,30 @@ public class RecordTypeServiceImpl implements RecordTypeService {
 				.filter(StringUtils::hasLength)
 				.map(Class::forName);
 	}
+
+	@Override
+	public LinkedMultiValueMap<String, String> buildDefaultFilters(String recordTypeName) {
+		LinkedMultiValueMap<String, String> param = new LinkedMultiValueMap<>();
+		RecordType recordType = getRecordType(recordTypeName);
+		recordType.getRecordtypeFields()
+				.stream()
+				.filter(fld -> StringUtils.hasLength(fld.getFilterKey()))
+				.filter(fld -> StringUtils.hasLength(fld.getFilterVal()))
+				.forEach(fld -> {
+					String filterVal = fld.getFilterVal();
+					String key = fld.getName();
+					if ("=UC.systemDate".equalsIgnoreCase(filterVal)) {
+						String isoDate = java.time.OffsetDateTime.now().toString();
+						param.add(key, isoDate);
+					}
+					else {
+						param.add(key, filterVal);
+					}
+				});
+
+		return param;
+	}
+
 
 	private void ensureLoadAcRecordType(String recordTypeName) {
 		if (this.allRecordType.containsKey(recordTypeName)) {
@@ -119,7 +151,14 @@ public class RecordTypeServiceImpl implements RecordTypeService {
 			List<RecordType> recordTypes = fetchAllRecordTypes();
 			allRecordType.clear();
 			mapRecordTypeByPage.clear();
-			recordTypes.forEach(recordType -> allRecordType.putIfAbsent(recordType.getName(), recordType));
+			recordTypes
+					.parallelStream()
+					.forEach(recordType -> {
+						allRecordType.putIfAbsent(recordType.getName(), recordType);
+						if (!StringUtils.hasLength(recordType.getClassName())) {
+							dynamicClassService.reloadMappingClass(recordType);
+						}
+					});
 
 			sw.stop();
 			log.info("Reload all RecordTypes success, found: {} items (took {} ms)", recordTypes.size(), sw.getTotalTimeMillis());

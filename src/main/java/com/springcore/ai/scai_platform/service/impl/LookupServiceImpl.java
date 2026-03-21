@@ -9,9 +9,7 @@ import com.springcore.ai.scai_platform.service.api.RecordTypeService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.util.LinkedMultiValueMap;
 
-import java.util.Collections;
 import java.util.List;
 
 @Slf4j
@@ -41,7 +39,8 @@ public class LookupServiceImpl implements LookupService {
         try {
             RecordType recordType = getRecordType(clazzName);
             if (recordType != null) {
-                return adminService.findDataOfRecordTypeByCriteria(clazzName, new LinkedMultiValueMap<>()).stream()
+                return adminService.findDataOfRecordTypeByCriteria(clazzName, recordTypeService.buildDefaultFilters(clazzName))
+                        .parallelStream()
                         .map(r -> LookupItem.builder()
                                 .id((Long) getValueByReflection(r, "id"))
                                 .code((String) getValueByReflection(r, "code"))
@@ -50,7 +49,8 @@ public class LookupServiceImpl implements LookupService {
                         .toList();
             }
         } catch (Exception e) {
-            log.warn("dynamicRepository.getDynamicLookup findDataOfRecordTypeByCriteria Failed.", e);
+            log.warn("dynamicRepository.getDynamicLookup {} findDataOfRecordTypeByCriteria Failed.", clazzName, e);
+            throw new RuntimeException("dynamicRepository.getDynamicLookup findDataOfRecordTypeByCriteria Failed");
         }
 
         try {
@@ -64,9 +64,8 @@ public class LookupServiceImpl implements LookupService {
                     .toList();
         } catch (Exception e) {
             log.warn("dynamicRepository.getDynamicLookup dynamicRepository.fetchData Failed.", e);
+            throw new RuntimeException("dynamicRepository.getDynamicLookup dynamicRepository.fetchData Failed");
         }
-
-        return Collections.emptyList();
     }
 
     @Override

@@ -11,6 +11,7 @@ import com.springcore.ai.scai_platform.factory.query.QueryExecutorFactory;
 import com.springcore.ai.scai_platform.properties.ApplicationProperties;
 import com.springcore.ai.scai_platform.repository.api.AdminRepository;
 import com.springcore.ai.scai_platform.service.api.AdminService;
+import com.springcore.ai.scai_platform.service.api.DynamicClassService;
 import com.springcore.ai.scai_platform.service.api.RecordTypeService;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -35,12 +36,15 @@ public class AdminServiceImpl implements AdminService {
     private final JsonMapper jsonMapper;
     private final AdminRepository adminRepository;
     private final RecordTypeService recordTypeService;
+    private final DynamicClassService dynamicClassService;
 
-    public AdminServiceImpl(ApplicationProperties applicationProperties, JsonMapper jsonMapper, AdminRepository adminRepository, RecordTypeService recordTypeService) {
+
+    public AdminServiceImpl(ApplicationProperties applicationProperties, JsonMapper jsonMapper, AdminRepository adminRepository, RecordTypeService recordTypeService, DynamicClassService dynamicClassService) {
         this.applicationProperties = applicationProperties;
         this.jsonMapper = jsonMapper;
         this.adminRepository = adminRepository;
         this.recordTypeService = recordTypeService;
+        this.dynamicClassService = dynamicClassService;
     }
 
     @Override
@@ -55,11 +59,10 @@ public class AdminServiceImpl implements AdminService {
 
     @Override
     public <T> List<T> findDataOfRecordTypeByCriteria(String recordTypeName, MultiValueMap<String, String> param) {
-
         Optional<RecordType> recordTypeOpt = this.recordTypeService.getRecordTypeOptional(recordTypeName);
         if (recordTypeOpt.isPresent()) {
             log.debug("Query recordType = {}", recordTypeOpt.get().getName());
-            final QueryExecutorFactory queryExecutorFactory = new QueryExecutorFactory(applicationProperties, em, recordTypeOpt.get(), param);
+            final QueryExecutorFactory queryExecutorFactory = new QueryExecutorFactory(applicationProperties, dynamicClassService, em, recordTypeOpt.get(), param);
             final QueryExecutor<T> queryExecutor = queryExecutorFactory.getQueryExecutor();
             return queryExecutor.execute();
         } else {

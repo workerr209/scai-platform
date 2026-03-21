@@ -3,6 +3,7 @@ package com.springcore.ai.scai_platform.service.api;
 import com.springcore.ai.scai_platform.entity.RecordType;
 import io.reactivex.rxjava3.core.Flowable;
 import org.springframework.data.domain.Pageable;
+import org.springframework.util.LinkedMultiValueMap;
 
 import java.util.List;
 import java.util.Optional;
@@ -20,4 +21,6 @@ public interface RecordTypeService {
 	Boolean reloadRecordTypeByName(String recordTypeName);
 
 	Flowable<Class<?>> loadClassFromRecordTypeName(String recordTypeName);
+
+	LinkedMultiValueMap<String, String> buildDefaultFilters(String recordTypeName);
 }

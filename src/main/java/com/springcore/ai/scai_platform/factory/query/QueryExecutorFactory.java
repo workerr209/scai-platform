@@ -3,6 +3,7 @@ package com.springcore.ai.scai_platform.factory.query;
 import com.springcore.ai.scai_platform.domain.type.QueryType;
 import com.springcore.ai.scai_platform.entity.RecordType;
 import com.springcore.ai.scai_platform.properties.ApplicationProperties;
+import com.springcore.ai.scai_platform.service.api.DynamicClassService;
 import jakarta.persistence.EntityManager;
 import lombok.AllArgsConstructor;
 import lombok.NonNull;
@@ -15,6 +16,9 @@ public final class QueryExecutorFactory {
     private final ApplicationProperties applicationProperties;
 
     @NonNull
+    private final DynamicClassService dynamicClassService;
+
+    @NonNull
     private final EntityManager em;
 
     @NonNull
@@ -25,9 +29,9 @@ public final class QueryExecutorFactory {
 
     public <T> QueryExecutor<T> getQueryExecutor() {
         if (QueryType.SQL.equals(recordType.getCustomQueryType())) {
-            return new SQLQueryExecutor<T>(applicationProperties, em, recordType, param);
+            return new SQLQueryExecutor<T>(applicationProperties, dynamicClassService, em, recordType, param);
         } else {
-            return new HQLQueryExecution<T>(em, recordType, param);
+            return new HQLQueryExecution<T>(dynamicClassService, em, recordType, param);
         }
     }
 }

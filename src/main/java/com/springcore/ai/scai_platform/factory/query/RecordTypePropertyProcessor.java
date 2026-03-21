@@ -27,7 +27,8 @@ final class RecordTypePropertyProcessor {
 
 
     public void process() {
-        String queryMappingClass = "GeneralMapping";
+        // String queryMappingClass = "GeneralMapping";
+        String queryMappingClass = StringUtils.EMPTY;
         String whereFilterCode = null;
         String whereFilterName = null;
         String whereUserName = null;
@@ -86,7 +87,11 @@ final class RecordTypePropertyProcessor {
     @Getter
     static class QueryMapping {
         private String className;
+
         public String getFullClassName() {
+            if (StringUtils.isBlank(className)) {
+                return StringUtils.EMPTY;
+            }
             return "com.springcore.ai.scai_platform.domain.mapping." + this.className;
         }
     }

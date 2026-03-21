@@ -3,6 +3,7 @@ package com.springcore.ai.scai_platform.factory.query;
 import com.springcore.ai.scai_platform.domain.extend.GenericPersistentObject;
 import com.springcore.ai.scai_platform.entity.RecordType;
 import com.springcore.ai.scai_platform.entity.RecordTypeField;
+import com.springcore.ai.scai_platform.service.api.DynamicClassService;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.TypedQuery;
 import jakarta.persistence.criteria.CriteriaBuilder;
@@ -14,7 +15,7 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.MultiValueMap;
-import org.springframework.util.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -26,6 +27,7 @@ import java.util.Map;
 @Slf4j
 class HQLQueryExecution<T> implements QueryExecutor<T> {
 
+    @NonNull private final DynamicClassService dynamicClassService;
     @NonNull private final EntityManager em;
     @NonNull private final RecordType recordType;
     @NonNull private final MultiValueMap<String, String> param;
@@ -33,10 +35,16 @@ class HQLQueryExecution<T> implements QueryExecutor<T> {
     @Override
     @SuppressWarnings("unchecked")
     public List<T> execute() {
-
+        String className = recordType.getClassName();
         try {
-            Class<T> clazz = (Class<T>) Class.forName(recordType.getClassName());
-            log.info("Loading dynamic class: {}", recordType.getClassName());
+            Class<T> clazz;
+            if (StringUtils.isBlank(className)) {
+                clazz = (Class<T>) dynamicClassService.getMappingClass(recordType);
+            } else {
+                clazz = (Class<T>) Class.forName(className);
+            }
+
+            log.info("Loading dynamic class: {}", className);
 
             Map<String, String> configParam = extractConfigParams();
             Map<String, String> filterMetadata = parseMetadata(recordType.getProp());
@@ -56,7 +64,7 @@ class HQLQueryExecution<T> implements QueryExecutor<T> {
             return query.getResultList();
 
         } catch (ClassNotFoundException e) {
-            log.error("Class not found: {}", recordType.getClassName());
+            log.error("Class not found: {}", className);
             throw new RuntimeException("Dynamic class loading failed", e);
         }
     }
@@ -77,7 +85,7 @@ class HQLQueryExecution<T> implements QueryExecutor<T> {
 
     private Map<String, String> parseMetadata(String prop) {
         Map<String, String> metadata = new HashMap<>();
-        if (!StringUtils.hasText(prop)) return metadata;
+        if (!StringUtils.isNotBlank(prop)) return metadata;
 
         // แยกด้วย [SEP.]
         String[] parts = prop.split("\\[SEP.]");

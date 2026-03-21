@@ -2,6 +2,7 @@ package com.springcore.ai.scai_platform.factory.query;
 
 import com.springcore.ai.scai_platform.entity.RecordType;
 import com.springcore.ai.scai_platform.properties.ApplicationProperties;
+import com.springcore.ai.scai_platform.service.api.DynamicClassService;
 import com.springcore.ai.scai_platform.utils.Utils;
 import jakarta.persistence.EntityManager;
 import lombok.NonNull;
@@ -10,7 +11,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.hibernate.query.NativeQuery;
 import org.hibernate.type.StandardBasicTypes;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.util.MultiValueMap;
 
 import java.lang.reflect.Field;
@@ -24,6 +24,7 @@ import java.util.List;
 final class SQLQueryExecutor<T> implements QueryExecutor<T> {
 
     @NonNull private final ApplicationProperties applicationProperties;
+    @NonNull private final DynamicClassService dynamicClassService;
     @NonNull private final EntityManager em;
     @NonNull private final RecordType recordType;
     @NonNull private final MultiValueMap<String, String> param;
@@ -33,11 +34,20 @@ final class SQLQueryExecutor<T> implements QueryExecutor<T> {
     public List<T> execute() {
         RecordTypePropertyProcessor processor = new RecordTypePropertyProcessor(recordType);
         RecordTypePropertyProcessor.QueryMapping queryMapping = processor.getQueryMapping();
+        String fullClassName = queryMapping.getFullClassName();
 
-        Class<?> mappingClass = Utils.declareClassName(queryMapping.getFullClassName());
+        Class<?> mappingClass = null;
+        if (StringUtils.isNotBlank(fullClassName)) {
+            mappingClass = Utils.declareClassName(fullClassName);
+        }
+
         if (mappingClass == null) {
-            log.error("Mapping class not found: {}", queryMapping.getFullClassName());
-            throw new RuntimeException("Class mapping not found : " + queryMapping.getFullClassName());
+            mappingClass = dynamicClassService.getMappingClass(recordType);
+        }
+
+        if (mappingClass == null) {
+            log.error("Mapping class not found: {}", fullClassName);
+            throw new RuntimeException("Class mapping not found : " + fullClassName);
         }
 
         StringBuilder sql = new StringBuilder();
@@ -59,12 +69,72 @@ final class SQLQueryExecutor<T> implements QueryExecutor<T> {
             sql.append(" ORDER BY ").append(recordType.getCustomOrder());
         }
 
-        log.debug("Executing Native SQL: {}", sql);
+        log.warn("Executing Native RecordTypeName: {}, SQL: {} ", recordType.getName(), sql);
         org.hibernate.Session session = em.unwrap(org.hibernate.Session.class);
         NativeQuery<T> nativeQuery = session.createNativeQuery(sql.toString(), (Class<T>) mappingClass);
         addAllScalar(nativeQuery, mappingClass);
-        bindParameters(nativeQuery, processor, conJunctionParam);
+
+        Class<?> finalMappingClass = mappingClass;
+        nativeQuery.setTupleTransformer((tuples, aliases) -> {
+            try {
+                T entity = (T) finalMappingClass.getDeclaredConstructor().newInstance();
+
+                for (int i = 0; i < aliases.length; i++) {
+                    String alias = aliases[i];
+                    Object value = tuples[i];
+                    if (value != null) {
+                        setFieldValue(entity, alias, value);
+                    }
+                }
+                return entity;
+            } catch (Exception e) {
+                log.error("SCAI Mapping Error: {}", e.getMessage());
+                return null;
+            }
+        });
+
+        bindParameters(nativeQuery, processor, sql.toString(), conJunctionParam);
         return nativeQuery.getResultList();
+    }
+
+    private void setFieldValue(Object target, String fieldName, Object value) {
+        try {
+            // ลองหา Field ตรงๆ ก่อน
+            Field field = findField(target.getClass(), fieldName);
+            if (field != null) {
+                field.setAccessible(true);
+
+                // จัดการเรื่อง Data Type mismatch เบื้องต้น (เช่น BigDecimal -> Long)
+                Object convertedValue = convertType(value, field.getType());
+                field.set(target, convertedValue);
+            }
+        } catch (Exception e) {
+            log.trace("Could not map field {}: {}", fieldName, e.getMessage());
+        }
+    }
+
+    private Field findField(Class<?> clazz, String name) {
+        try {
+            return clazz.getDeclaredField(name);
+        } catch (NoSuchFieldException e) {
+            for (Field f : clazz.getDeclaredFields()) {
+                if (f.getName().equalsIgnoreCase(name)) return f;
+            }
+        }
+        return null;
+    }
+
+    private Object convertType(Object value, Class<?> targetType) {
+        if (value == null) return null;
+        if (targetType.isInstance(value)) return value;
+
+        // แปลง BigDecimal (จาก Hibernate) เป็น Type ที่เราต้องการใน Java
+        if (value instanceof Number num) {
+            if (targetType == Long.class || targetType == long.class) return num.longValue();
+            if (targetType == Integer.class || targetType == int.class) return num.intValue();
+            if (targetType == Double.class || targetType == double.class) return num.doubleValue();
+        }
+        return value;
     }
 
     private Object parseIsoDate(String isoString, String userTimezone) {
@@ -83,17 +153,20 @@ final class SQLQueryExecutor<T> implements QueryExecutor<T> {
     private void appendDynamicFilters(StringBuilder sql, RecordTypePropertyProcessor processor) {
         if (param.isEmpty()) return;
 
-        RecordTypePropertyProcessor.WhereFilter whereFilter = processor.getWhereFilter();
         param.keySet().forEach(key -> {
             List<String> values = param.get(key);
             if (values == null || values.isEmpty() || StringUtils.isBlank(values.get(0))) return;
 
-            String dbColumnName = key;
-            if ("code".equals(key) && StringUtils.isNotBlank(whereFilter.getCode())) dbColumnName = whereFilter.getCode();
-            if ("name".equals(key) && StringUtils.isNotBlank(whereFilter.getName())) dbColumnName = whereFilter.getName();
+            // ค้นหา Metadata ของฟิลด์นี้
+            var fldMetadata = recordType.getRecordtypeFields().stream()
+                    .filter(f -> f.getName().equals(key))
+                    .findFirst();
 
-            String operator = values.get(0).contains("%") ? " LIKE " : " = ";
-            sql.append(" AND ").append(dbColumnName).append(operator).append(":").append(key);
+            if (fldMetadata.isPresent() && StringUtils.isNotBlank(fldMetadata.get().getFilterField())) {
+                String dbColumnName = fldMetadata.get().getFilterField();
+                String operator = values.get(0).contains("%") ? " LIKE " : " = ";
+                sql.append(" AND ").append(dbColumnName).append(operator).append(":").append(key);
+            }
         });
     }
 
@@ -104,7 +177,7 @@ final class SQLQueryExecutor<T> implements QueryExecutor<T> {
         }
     }
 
-    private void bindParameters(NativeQuery<?> query, RecordTypePropertyProcessor processor, List<String> conjParam) {
+    private void bindParameters(NativeQuery<?> query, RecordTypePropertyProcessor processor, String sql, List<String> conjParam) {
         String userTimezone = applicationProperties.getGeneral().getDefaultUserPreference().getTimezone();
         List<String> processedKeys = new ArrayList<>();
         recordType.getRecordtypeFields().stream()
@@ -124,7 +197,7 @@ final class SQLQueryExecutor<T> implements QueryExecutor<T> {
 
         // 3. Bind Parameter ที่เหลือ (String, Long, ฯลฯ)
         param.forEach((key, values) -> {
-            if (values != null && !values.isEmpty()) {
+            if (values != null && !values.isEmpty() && sql.contains(":" + key)) {
                 query.setParameter(key, values.get(0));
             }
         });
@@ -134,17 +207,14 @@ final class SQLQueryExecutor<T> implements QueryExecutor<T> {
             query.setParameter("conJunctionParam", conjParam);
         }
 
-        RecordTypePropertyProcessor.UsernameFilter userFilter = processor.getUsernameFilter();
+        /*RecordTypePropertyProcessor.UsernameFilter userFilter = processor.getUsernameFilter();
         if (userFilter != null && userFilter.getUsername() != null) {
             String currentUsername = SecurityContextHolder.getContext().getAuthentication().getName();
             query.setParameter("username", currentUsername);
             log.debug("Binding username filter: {}", currentUsername);
-        }
+        }*/
     }
 
-    /**
-     * Mapping ฟิลด์ใน Class Java เข้ากับประเภทข้อมูลของ SQL Standard
-     */
     private void addAllScalar(NativeQuery<?> query, Class<?> clazz) {
         for (Field field : clazz.getDeclaredFields()) {
             Class<?> type = field.getType();
@@ -169,4 +239,5 @@ final class SQLQueryExecutor<T> implements QueryExecutor<T> {
             }
         }
     }
+
 }
