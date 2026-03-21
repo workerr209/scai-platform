@@ -18,152 +18,131 @@ import org.springframework.util.StringUtils;
 
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.LinkedList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
 @Slf4j
 class HQLQueryExecution<T> implements QueryExecutor<T> {
 
-    @NonNull
-    EntityManager em;
-    @NonNull
-    private RecordType recordType;
-
-    @NonNull
-    private MultiValueMap<String, String> param;
+    @NonNull private final EntityManager em;
+    @NonNull private final RecordType recordType;
+    @NonNull private final MultiValueMap<String, String> param;
 
     @Override
+    @SuppressWarnings("unchecked")
     public List<T> execute() {
-        return Optional.of(recordType)
-                .map(recordType -> {
-                    String classname = recordType.getClassName();
-                    log.info("load dynamic class : {}", classname);
-                    Class<T> clazz = null;
-                    try {
-                        clazz = (Class<T>) Class.forName(classname);
-                    } catch (ClassNotFoundException e) {
-                        throw new RuntimeException(e);
-                    }
-                    Map<String, String> configParam = param.keySet().stream()
-                            .filter(key -> key.startsWith("config_"))
-                            .collect(Collectors.toMap(x -> x, x -> param.get(x).get(0)));
-                    configParam.keySet().forEach(key -> param.remove(key));
 
-                    List<RecordTypeField> acRecordtypeFields = recordType.getRecordtypeFields();
+        try {
+            Class<T> clazz = (Class<T>) Class.forName(recordType.getClassName());
+            log.info("Loading dynamic class: {}", recordType.getClassName());
 
-                    CriteriaBuilder cb = em.getCriteriaBuilder();
-                    CriteriaQuery<T> cq = cb.createQuery(clazz);
+            Map<String, String> configParam = extractConfigParams();
+            Map<String, String> filterMetadata = parseMetadata(recordType.getProp());
 
-                    Root<?> from = cq.from(clazz);
-                    
-                    String prop = recordType.getProp();
-                    String whereFilterCode = "";
-                    
-                    String whereFilterName = "";
-//                    if(StringUtils.isNotEmpty(prop)) {
-//                    	Arrays.stream(prop.split("[SEP.]")).map(string -> string.split("[SEP.]"))
-//                    	 .filter(props -> "whereFilter".contains(props.toString()));
-//                    }
-//                    
-                    String RoleValueMapping = "RoleValueMapping";
-                    if(prop != null) {
-                    	for(String props : prop.split("\\[SEP.]")) {
-                    		if(props.startsWith("whereFilter")){
-                    			for(String whereFilter : props.split("=")[1].split(",")) {
-                    				if(whereFilter.startsWith("code")) {
-                    					whereFilterCode = whereFilter.split(":")[1];
-                    				} else if(whereFilter.startsWith("name")) {
-                    					whereFilterName = whereFilter.split(":")[1];
-                    				}
-                    			}
-                    		}else if(props.startsWith("RoleValueMapping")){
-                    			RoleValueMapping = props.split("=")[1];
-                    		}
-                    	}
-                    }
-                    final String filterCode = whereFilterCode;
-                    final String filterName = whereFilterName;
+            CriteriaBuilder cb = em.getCriteriaBuilder();
+            CriteriaQuery<T> cq = cb.createQuery(clazz);
+            Root<T> root = cq.from(clazz);
+            List<Predicate> predicates = new ArrayList<>();
 
-                    if (param != null) {
-                        LinkedList<Predicate> predicates = new LinkedList<>();
+            buildPredicates(root, cb, predicates, filterMetadata);
+            if (!predicates.isEmpty()) {
+                cq.where(cb.and(predicates.toArray(new Predicate[0])));
+            }
 
-                        param.forEach((k, lv) -> {
-                        	
-                        	if("code".equals(k) && !filterCode.isBlank()) {
-                             	k = filterCode;
-	                        }
-	                        if("name".equals(k) && !filterName.isBlank()) {
-	                         	k = filterName;
-	                        }
-                            Path<String> path = from.get(k);
+            TypedQuery<T> query = em.createQuery(cq);
+            applyConfigs(query, configParam);
+            return query.getResultList();
 
-                            
-	                        final String key = k;
-                            Class<? extends String> javaType = path.getJavaType();
-                            boolean isInstanceOfPersistentObject = GenericPersistentObject.class.isAssignableFrom(javaType) || (Serializable.class.isAssignableFrom(javaType) && !javaType.equals(String.class));
-                            
-                            if(isInstanceOfPersistentObject) {
-                                log.debug("{} is instanceOf {}", key, GenericPersistentObject.class);
-                            }
+        } catch (ClassNotFoundException e) {
+            log.error("Class not found: {}", recordType.getClassName());
+            throw new RuntimeException("Dynamic class loading failed", e);
+        }
+    }
 
-                            Path<String> pathJoin = isInstanceOfPersistentObject ? path.get("id") : null;
+    private Map<String, String> extractConfigParams() {
+        Map<String, String> configs = new HashMap<>();
+        List<String> keysToRemove = new ArrayList<>();
 
-                            lv.forEach(v -> {
-                                String criteria = " = ";
-                                Predicate pd = null;
+        param.forEach((key, values) -> {
+            if (key.startsWith("config_") && !values.isEmpty()) {
+                configs.put(key, values.get(0));
+                keysToRemove.add(key);
+            }
+        });
+        keysToRemove.forEach(param::remove);
+        return configs;
+    }
 
-                                if (v.indexOf("%") > -1) {
-                                    pd = cb.like(pathJoin == null ? path : pathJoin, v);
-                                } else {
-                                    RecordTypeField recordTypeField = acRecordtypeFields.stream()
-                                            .filter(obj -> key.equals(obj.getName()))
-                                            .findFirst()
-                                            .orElse(null);
+    private Map<String, String> parseMetadata(String prop) {
+        Map<String, String> metadata = new HashMap<>();
+        if (!StringUtils.hasText(prop)) return metadata;
 
-                                    if (recordTypeField != null && StringUtils.hasLength(recordTypeField.getFilterOp())) {
-                                        criteria = recordTypeField.getFilterOp();
-                                    }
-//
-                                    if (criteria.equals("like")) {
-                                        pd = cb.like(pathJoin == null ? path : pathJoin, "%" + v + "%");
-                                    } else {
-                                        final Object realValue;
-                                        if(javaType.equals(Boolean.class)) {
-                                            realValue = "1".equals(v) ? Boolean.TRUE : Boolean.FALSE;
-                                        } else {
-                                            realValue = v;
-                                        }
+        // แยกด้วย [SEP.]
+        String[] parts = prop.split("\\[SEP.]");
+        for (String part : parts) {
+            if (part.startsWith("whereFilter=")) {
+                String val = part.split("=")[1];
+                for (String entry : val.split(",")) {
+                    String[] kv = entry.split(":");
+                    if (kv.length == 2) metadata.put("filter_" + kv[0], kv[1]);
+                }
+            } else if (part.startsWith("RoleValueMapping=")) {
+                metadata.put("roleMapping", part.split("=")[1]);
+            }
+        }
+        return metadata;
+    }
 
-                                        pd = cb.equal(pathJoin == null ? path : pathJoin, realValue);
-                                    }
+    private void buildPredicates(Root<T> root, CriteriaBuilder cb, List<Predicate> predicates, Map<String, String> meta) {
+        param.forEach((key, values) -> {
+            // Mapping key ตาม metadata
+            String targetKey = key;
+            if ("code".equals(key)) targetKey = meta.getOrDefault("filter_code", key);
+            if ("name".equals(key)) targetKey = meta.getOrDefault("filter_name", key);
 
-                                }
+            try {
+                Path<?> path = root.get(targetKey);
+                Class<?> javaType = path.getJavaType();
 
-                                predicates.add(pd);
+                // เช็คว่าเป็น Persistent Object หรือไม่ (คล้าย Logic เดิม)
+                boolean isEntity = GenericPersistentObject.class.isAssignableFrom(javaType) ||
+                        (Serializable.class.isAssignableFrom(javaType) && !javaType.equals(String.class));
 
-                            });
-                        });
+                final Path<?> finalPath = isEntity ? path.get("id") : path;
+                final String finalKey = targetKey;
+                values.forEach(val -> predicates.add(createPredicate(finalPath, cb, val, finalKey, javaType)));
+            } catch (Exception e) {
+                log.warn("Field {} not found in entity, skipping filter.", targetKey);
+            }
+        });
+    }
 
-                        Predicate[] xs = predicates.toArray(new Predicate[predicates.size()]);
+    @SuppressWarnings("unchecked")
+    private Predicate createPredicate(Path<?> path, CriteriaBuilder cb, String value, String key, Class<?> javaType) {
+        // หา Filter Operation จาก RecordTypeField
+        String op = recordType.getRecordtypeFields().stream()
+                .filter(f -> key.equals(f.getName()))
+                .map(RecordTypeField::getFilterOp)
+                .findFirst()
+                .orElse("=");
 
-                        cq.where(cb.and(xs));
-                    }
+        if (value.contains("%") || "like".equalsIgnoreCase(op)) {
+            String pattern = value.contains("%") ? value : "%" + value + "%";
+            return cb.like((Path<String>) path, pattern);
+        }
 
-                    TypedQuery<T> query = em.createQuery(cq);
-                    if(configParam != null && !configParam.isEmpty()) {
-                        configParam.forEach((key, val) -> {
-                            if(key.equals("config_maxresult")) {
-                                query.setMaxResults(Integer.valueOf(val));
-                            }
-                        });
-                    }
+        if (javaType.equals(Boolean.class)) {
+            return cb.equal(path, "1".equals(value));
+        }
 
-                    ArrayList<T> resultList = (ArrayList<T>) query.getResultList();
-                    return  resultList;
-                }).orElseGet(null);
+        return cb.equal(path, value);
+    }
+
+    private void applyConfigs(TypedQuery<T> query, Map<String, String> configs) {
+        if (configs.containsKey("config_maxresult")) {
+            query.setMaxResults(Integer.parseInt(configs.get("config_maxresult")));
+        }
     }
 }

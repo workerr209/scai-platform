@@ -87,7 +87,7 @@ final class RecordTypePropertyProcessor {
     static class QueryMapping {
         private String className;
         public String getFullClassName() {
-            return "th.co.teamworkdevelopment.domain.mapping." + this.className;
+            return "com.springcore.ai.scai_platform.domain.mapping." + this.className;
         }
     }
     

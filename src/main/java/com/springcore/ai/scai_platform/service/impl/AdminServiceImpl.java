@@ -8,6 +8,7 @@ import com.springcore.ai.scai_platform.entity.GroupMenu;
 import com.springcore.ai.scai_platform.entity.RecordType;
 import com.springcore.ai.scai_platform.factory.query.QueryExecutor;
 import com.springcore.ai.scai_platform.factory.query.QueryExecutorFactory;
+import com.springcore.ai.scai_platform.properties.ApplicationProperties;
 import com.springcore.ai.scai_platform.repository.api.AdminRepository;
 import com.springcore.ai.scai_platform.service.api.AdminService;
 import com.springcore.ai.scai_platform.service.api.RecordTypeService;
@@ -30,15 +31,16 @@ public class AdminServiceImpl implements AdminService {
 
     @PersistenceContext
     EntityManager em;
-
+    private final ApplicationProperties applicationProperties;
+    private final JsonMapper jsonMapper;
     private final AdminRepository adminRepository;
     private final RecordTypeService recordTypeService;
-    private final JsonMapper jsonMapper;
 
-    public AdminServiceImpl(AdminRepository adminRepository, RecordTypeService recordTypeService, JsonMapper jsonMapper) {
+    public AdminServiceImpl(ApplicationProperties applicationProperties, JsonMapper jsonMapper, AdminRepository adminRepository, RecordTypeService recordTypeService) {
+        this.applicationProperties = applicationProperties;
+        this.jsonMapper = jsonMapper;
         this.adminRepository = adminRepository;
         this.recordTypeService = recordTypeService;
-        this.jsonMapper = jsonMapper;
     }
 
     @Override
@@ -57,7 +59,7 @@ public class AdminServiceImpl implements AdminService {
         Optional<RecordType> recordTypeOpt = this.recordTypeService.getRecordTypeOptional(recordTypeName);
         if (recordTypeOpt.isPresent()) {
             log.debug("Query recordType = {}", recordTypeOpt.get().getName());
-            final QueryExecutorFactory queryExecutorFactory = new QueryExecutorFactory(em, recordTypeOpt.get(), param);
+            final QueryExecutorFactory queryExecutorFactory = new QueryExecutorFactory(applicationProperties, em, recordTypeOpt.get(), param);
             final QueryExecutor<T> queryExecutor = queryExecutorFactory.getQueryExecutor();
             return queryExecutor.execute();
         } else {

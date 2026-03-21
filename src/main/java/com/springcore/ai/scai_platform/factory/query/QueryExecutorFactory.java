@@ -2,6 +2,7 @@ package com.springcore.ai.scai_platform.factory.query;
 
 import com.springcore.ai.scai_platform.domain.type.QueryType;
 import com.springcore.ai.scai_platform.entity.RecordType;
+import com.springcore.ai.scai_platform.properties.ApplicationProperties;
 import jakarta.persistence.EntityManager;
 import lombok.AllArgsConstructor;
 import lombok.NonNull;
@@ -11,17 +12,20 @@ import org.springframework.util.MultiValueMap;
 public final class QueryExecutorFactory {
 
     @NonNull
-    final private EntityManager em;
+    private final ApplicationProperties applicationProperties;
 
     @NonNull
-    final private RecordType recordType;
+    private final EntityManager em;
 
     @NonNull
-    final private MultiValueMap<String, String> param;
+    private final RecordType recordType;
+
+    @NonNull
+    private final MultiValueMap<String, String> param;
 
     public <T> QueryExecutor<T> getQueryExecutor() {
         if (QueryType.SQL.equals(recordType.getCustomQueryType())) {
-            return new SQLQueryExecutor<T>(em, recordType, param);
+            return new SQLQueryExecutor<T>(applicationProperties, em, recordType, param);
         } else {
             return new HQLQueryExecution<T>(em, recordType, param);
         }
