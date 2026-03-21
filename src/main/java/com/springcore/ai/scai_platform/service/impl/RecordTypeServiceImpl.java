@@ -57,16 +57,13 @@ public class RecordTypeServiceImpl implements RecordTypeService {
 
 	@Override
 	public Boolean reloadRecordTypeByName(String recordTypeName) {
+		dynamicClassService.removeMappingClass(recordTypeName);
 		final RecordType removed = this.allRecordType.remove(recordTypeName);
 		if (removed != null) {
 			removed.getRecordtypeFields()
 					.stream()
 					.map(RecordTypeField::getName)
 					.forEach(this.allRecordType::remove);
-			String className = removed.getClassName();
-			if (!StringUtils.hasLength(className)) {
-				dynamicClassService.reloadMappingClass(removed);
-			}
 		} else {
 			return false;
 		}
@@ -155,9 +152,7 @@ public class RecordTypeServiceImpl implements RecordTypeService {
 					.parallelStream()
 					.forEach(recordType -> {
 						allRecordType.putIfAbsent(recordType.getName(), recordType);
-						if (!StringUtils.hasLength(recordType.getClassName())) {
-							dynamicClassService.reloadMappingClass(recordType);
-						}
+						dynamicClassService.removeMappingClass(recordType.getName());
 					});
 
 			sw.stop();

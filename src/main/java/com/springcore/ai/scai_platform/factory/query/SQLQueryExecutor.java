@@ -57,8 +57,8 @@ final class SQLQueryExecutor<T> implements QueryExecutor<T> {
         if (StringUtils.isNotBlank(recordType.getCustomWhere())) {
             sql.append(" AND (").append(recordType.getCustomWhere()).append(") ");
         }
-        appendDynamicFilters(sql, processor);
 
+        appendDynamicFilters(sql);
         List<String> conJunctionParam = param.remove("conJunctionParam");
         appendConjunction(sql, processor, conJunctionParam);
 
@@ -69,7 +69,7 @@ final class SQLQueryExecutor<T> implements QueryExecutor<T> {
             sql.append(" ORDER BY ").append(recordType.getCustomOrder());
         }
 
-        log.warn("Executing Native RecordTypeName: {}, SQL: {} ", recordType.getName(), sql);
+        log.debug("Executing Native RecordTypeName: {}, SQL: {} ", recordType.getName(), sql);
         org.hibernate.Session session = em.unwrap(org.hibernate.Session.class);
         NativeQuery<T> nativeQuery = session.createNativeQuery(sql.toString(), (Class<T>) mappingClass);
         addAllScalar(nativeQuery, mappingClass);
@@ -94,7 +94,13 @@ final class SQLQueryExecutor<T> implements QueryExecutor<T> {
         });
 
         bindParameters(nativeQuery, processor, sql.toString(), conJunctionParam);
-        return nativeQuery.getResultList();
+
+        try {
+            return nativeQuery.getResultList();
+        } catch (Exception e) {
+            log.error("SQLQueryExecutor nativeQuery.getResultList Error: {}", e.getMessage());
+            throw e;
+        }
     }
 
     private void setFieldValue(Object target, String fieldName, Object value) {
@@ -150,7 +156,7 @@ final class SQLQueryExecutor<T> implements QueryExecutor<T> {
         }
     }
 
-    private void appendDynamicFilters(StringBuilder sql, RecordTypePropertyProcessor processor) {
+    private void appendDynamicFilters(StringBuilder sql) {
         if (param.isEmpty()) return;
 
         param.keySet().forEach(key -> {
@@ -195,18 +201,17 @@ final class SQLQueryExecutor<T> implements QueryExecutor<T> {
                 });
         processedKeys.forEach(param::remove);
 
-        // 3. Bind Parameter ที่เหลือ (String, Long, ฯลฯ)
         param.forEach((key, values) -> {
             if (values != null && !values.isEmpty() && sql.contains(":" + key)) {
                 query.setParameter(key, values.get(0));
             }
         });
 
-        // 4. Bind Conjunction และ Username
         if (conjParam != null && !conjParam.isEmpty()) {
             query.setParameter("conJunctionParam", conjParam);
         }
 
+        log.debug("Todo parameters for query: {}", processor);
         /*RecordTypePropertyProcessor.UsernameFilter userFilter = processor.getUsernameFilter();
         if (userFilter != null && userFilter.getUsername() != null) {
             String currentUsername = SecurityContextHolder.getContext().getAuthentication().getName();
@@ -217,25 +222,30 @@ final class SQLQueryExecutor<T> implements QueryExecutor<T> {
 
     private void addAllScalar(NativeQuery<?> query, Class<?> clazz) {
         for (Field field : clazz.getDeclaredFields()) {
-            Class<?> type = field.getType();
             String name = field.getName();
+            Class<?> type = field.getType();
 
-            if (type.isAssignableFrom(String.class)) {
-                query.addScalar(name, StandardBasicTypes.STRING);
-            } else if (type.isAssignableFrom(Long.class) || type == long.class) {
-                query.addScalar(name, StandardBasicTypes.LONG);
-            } else if (type.isAssignableFrom(Integer.class) || type == int.class) {
-                query.addScalar(name, StandardBasicTypes.INTEGER);
-            } else if (type.isAssignableFrom(Double.class) || type == double.class) {
-                query.addScalar(name, StandardBasicTypes.DOUBLE);
-            } else if (type.isAssignableFrom(BigDecimal.class)) {
-                query.addScalar(name, StandardBasicTypes.BIG_DECIMAL);
-            } else if (type.isAssignableFrom(Date.class)) {
-                query.addScalar(name, StandardBasicTypes.DATE);
-            } else if (type.isAssignableFrom(Character.class) || type == char.class) {
-                query.addScalar(name, StandardBasicTypes.CHARACTER);
-            } else if (type.isAssignableFrom(Boolean.class) || type == boolean.class) {
-                query.addScalar(name, StandardBasicTypes.BOOLEAN);
+            try {
+                if (type.isAssignableFrom(String.class)) {
+                    query.addScalar(name, StandardBasicTypes.STRING);
+                } else if (type.isAssignableFrom(Long.class) || type == long.class) {
+                    query.addScalar(name, StandardBasicTypes.LONG);
+                } else if (type.isAssignableFrom(Integer.class) || type == int.class) {
+                    query.addScalar(name, StandardBasicTypes.INTEGER);
+                } else if (type.isAssignableFrom(BigDecimal.class)) {
+                    query.addScalar(name, StandardBasicTypes.BIG_DECIMAL);
+                } else if (type.isAssignableFrom(Date.class)) {
+                    query.addScalar(name, StandardBasicTypes.DATE);
+                } else if (type.isAssignableFrom(Boolean.class) || type == boolean.class) {
+                    query.addScalar(name, StandardBasicTypes.BOOLEAN);
+                } else if (type.isAssignableFrom(Double.class) || type == double.class) {
+                    query.addScalar(name, StandardBasicTypes.DOUBLE);
+                }
+
+                log.trace("SCAI: Successfully added scalar for {}", name);
+
+            } catch (Exception e) {
+                log.warn("SCAI: Skip scalar mapping for field '{}' (Not found in SQL SELECT)", name);
             }
         }
     }

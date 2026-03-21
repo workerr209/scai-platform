@@ -4,5 +4,5 @@ import com.springcore.ai.scai_platform.entity.RecordType;
 
 public interface DynamicClassService {
     Class<?> getMappingClass(RecordType recordType);
-    void reloadMappingClass(RecordType recordType);
+    void removeMappingClass(String recordTypeName);
 }
