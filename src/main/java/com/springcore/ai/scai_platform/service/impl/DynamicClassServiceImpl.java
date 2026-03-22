@@ -98,6 +98,10 @@ public class DynamicClassServiceImpl implements DynamicClassService {
 
     private boolean isFieldInSelect(String fieldName, String[] customSelectArr) {
         log.debug("isFieldInSelect : {}", fieldName);
+        if (customSelectArr == null) {
+            return false;
+        }
+
         for (String sFld : customSelectArr) {
             if (StringUtils.isBlank(sFld)) continue;
 
