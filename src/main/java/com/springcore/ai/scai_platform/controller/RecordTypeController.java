@@ -64,6 +64,15 @@ public class RecordTypeController {
 		return ResponseEntity.ok(recordTypeService.getRecordType(recordTypeName));
 	}
 
+	@GetMapping("/data/search/page/{recordTypeName}")
+	public ResponseEntity<List<Object>> searchDataOfRecordTypeWithPage(@PathVariable @Valid String recordTypeName
+			, @RequestParam(defaultValue = "0") int page
+			, @RequestParam(defaultValue = "20") int size
+			, @Valid @RequestParam MultiValueMap<String, String> param) {
+		Pageable pageable = PageRequest.of(page, size);
+		return ResponseEntity.ok(recordTypeService.searchDataOfRecordTypeWithPage(pageable, recordTypeName, param));
+	}
+
 	@GetMapping("/data/search/{recordTypeName}")
 	public <T> List<T> searchDataOfRecordType(@PathVariable @Valid String recordTypeName, @Valid @RequestParam MultiValueMap<String, String> param) throws ClassNotFoundException {
 		return adminService.findDataOfRecordTypeByCriteria(recordTypeName, param);

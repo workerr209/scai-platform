@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 import org.springframework.util.StopWatch;
 import org.springframework.util.StringUtils;
 
@@ -104,7 +105,6 @@ public class RecordTypeServiceImpl implements RecordTypeService {
 		return param;
 	}
 
-
 	private void ensureLoadAcRecordType(String recordTypeName) {
 		if (this.allRecordType.containsKey(recordTypeName)) {
 			log.debug("load recordtype: {} from memory.", recordTypeName);
@@ -137,6 +137,11 @@ public class RecordTypeServiceImpl implements RecordTypeService {
 		});
 
 		return new ArrayList<>(pageCache.values());
+	}
+
+	@Override
+	public List<Object> searchDataOfRecordTypeWithPage(Pageable pageable, String recordTypeName, MultiValueMap<String, String> param) {
+		return List.of();
 	}
 
 	@Override
