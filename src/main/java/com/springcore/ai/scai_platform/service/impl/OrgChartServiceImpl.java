@@ -50,7 +50,6 @@ public class OrgChartServiceImpl implements OrgChartService {
 
     @Override
     public List<Long> getPathToRoot(Long employeeId) {
-        // จะได้ List ของ ID เช่น [1, 5, 10, 22] (CEO -> ... -> พนักงาน)
         return hierarchyRepository.getAncestorIds(employeeId);
     }
 
@@ -64,7 +63,6 @@ public class OrgChartServiceImpl implements OrgChartService {
 
     @Override
     public List<OrgChartNodeDTO> getChildren(Long managerId) {
-        // ดึงเฉพาะพนักงานที่มี Manager ID ตามที่ระบุ
         return traftsRepository.findAllByManagerIdAndIscurrentTrue(managerId)
                 .stream()
                 .map(this::convertToDTO)
