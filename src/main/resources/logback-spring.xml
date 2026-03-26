@@ -12,6 +12,7 @@
 
     <appender name="DAILY_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${LOG_PATH}/app.log</file>
+        <filePermissions>644</filePermissions>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
             <fileNamePattern>${LOG_PATH}/app-%d{yyyy-MM-dd}.log.gz</fileNamePattern>
             <maxHistory>30</maxHistory>
