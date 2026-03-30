@@ -96,17 +96,6 @@ public class AdminServiceImpl implements AdminService {
     @Override
     @Transactional
     public <T> T updateDataOfRecordType(Class<T> clazz, Map<String, Object> param) {
-        Object idValue = param.get("id");
-        T existingEntity = em.find(clazz, idValue);
-        if (existingEntity != null) {
-            try {
-                jsonMapper.updateValue(existingEntity, param);
-                return existingEntity;
-            } catch (JsonMappingException e) {
-                throw new RuntimeException(e);
-            }
-        }
-
         T entity = jsonMapper.convertValue(param, clazz);
         entity = em.merge(entity);
         return entity;

@@ -109,10 +109,11 @@ public class RecordTypeServiceImpl implements RecordTypeService {
 	public void convertLookupToLong(String recordTypeName, Map<String, Object> param) {
 		if (param == null || param.isEmpty()) return;
 
+		reloadRecordTypeByName(recordTypeName);
 		RecordType recordType = getRecordType(recordTypeName);
 		if (recordType == null) return;
-
-		recordType.getFieldList()
+		List<RecordTypeField> fieldList = recordType.getFieldList();
+		fieldList
 				.stream()
 				.filter(field -> "RECORD".equals(field.getDataType()))
 				.filter(field -> {

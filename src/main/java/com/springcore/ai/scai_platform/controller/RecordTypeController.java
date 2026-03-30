@@ -94,11 +94,12 @@ public class RecordTypeController {
 	
 	@ResponseStatus(HttpStatus.CREATED)
 	@PostMapping("/data/save/{recordTypeName}")
-	public void saveDataOfRecordType(@PathVariable String recordTypeName,
+	public Object saveDataOfRecordType(@PathVariable String recordTypeName,
                                      @RequestBody Map<String, Object> param) throws IllegalArgumentException {
 		recordTypeService.convertLookupToLong(recordTypeName, param);
-		Flowable<Class<?>> flowableClazz = recordTypeService.loadClassFromRecordTypeName(recordTypeName);
-		flowableClazz.map(clazz -> adminService.saveDataOfRecordType(clazz, param)).subscribe();
+		Flowable<Class<?>> flowable = recordTypeService.loadClassFromRecordTypeName(recordTypeName);
+		Object item = flowable.map(clazz -> adminService.saveDataOfRecordType(clazz, param)).blockingFirst();
+		return ResponseEntity.ok(item);
 	}
 	
 	@PutMapping("/data/update/{recordTypeName}")
