@@ -96,6 +96,7 @@ public class RecordTypeController {
 	@PostMapping("/data/save/{recordTypeName}")
 	public void saveDataOfRecordType(@PathVariable String recordTypeName,
                                      @RequestBody Map<String, Object> param) throws IllegalArgumentException {
+		recordTypeService.convertLookupToLong(recordTypeName, param);
 		Flowable<Class<?>> flowableClazz = recordTypeService.loadClassFromRecordTypeName(recordTypeName);
 		flowableClazz.map(clazz -> adminService.saveDataOfRecordType(clazz, param)).subscribe();
 	}

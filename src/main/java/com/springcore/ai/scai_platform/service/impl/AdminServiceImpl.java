@@ -1,5 +1,6 @@
 package com.springcore.ai.scai_platform.service.impl;
 
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.springcore.ai.scai_platform.domain.mapping.RoleMappingMenu;
 import com.springcore.ai.scai_platform.dto.FormMasterDeleteDTO;
@@ -76,15 +77,17 @@ public class AdminServiceImpl implements AdminService {
     public int deleteDataOfRecordTypeByIds(String recordTypeName, FormMasterDeleteDTO param) {
         Optional<RecordType> recordType = this.recordTypeService.getRecordTypeOptional(recordTypeName);
         return recordType.map(acRecordtype -> this.adminRepository.deleteDataOfRecordTypeByIds(acRecordtype, param.getIds())).orElse(0);
-
     }
 
     @Override
     @Transactional
     public <T> T saveDataOfRecordType(Class<T> clazz, Map<String, Object> param) {
+        Object id = param.get("id");
+        if (id != null) {
+            return updateDataOfRecordType(clazz, param);
+        }
 
         final T entity = jsonMapper.convertValue(param, clazz);
-
         em.persist(entity);
 
         return entity;
@@ -93,6 +96,17 @@ public class AdminServiceImpl implements AdminService {
     @Override
     @Transactional
     public <T> T updateDataOfRecordType(Class<T> clazz, Map<String, Object> param) {
+        Object idValue = param.get("id");
+        T existingEntity = em.find(clazz, idValue);
+        if (existingEntity != null) {
+            try {
+                jsonMapper.updateValue(existingEntity, param);
+                return existingEntity;
+            } catch (JsonMappingException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
         T entity = jsonMapper.convertValue(param, clazz);
         entity = em.merge(entity);
         return entity;

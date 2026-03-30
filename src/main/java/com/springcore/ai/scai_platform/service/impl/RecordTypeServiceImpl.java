@@ -105,6 +105,28 @@ public class RecordTypeServiceImpl implements RecordTypeService {
 		return param;
 	}
 
+	@Override
+	public void convertLookupToLong(String recordTypeName, Map<String, Object> param) {
+		if (param == null || param.isEmpty()) return;
+
+		RecordType recordType = getRecordType(recordTypeName);
+		if (recordType == null) return;
+
+		recordType.getFieldList()
+				.stream()
+				.filter(field -> "RECORD".equals(field.getDataType()))
+				.filter(field -> {
+					Object val = param.get(field.getName());
+					return val instanceof Map;
+				})
+				.forEach(field -> {
+					String fldName = field.getName();
+					Map<?, ?> obj = (Map<?, ?>) param.get(fldName);
+					Object id = obj.get("id");
+					param.put(fldName, id);
+				});
+	}
+
 	private void ensureLoadAcRecordType(String recordTypeName) {
 		if (this.allRecordType.containsKey(recordTypeName)) {
 			log.debug("load recordtype: {} from memory.", recordTypeName);

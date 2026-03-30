@@ -7,6 +7,7 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 public interface RecordTypeService {
@@ -26,4 +27,6 @@ public interface RecordTypeService {
 	Flowable<Class<?>> loadClassFromRecordTypeName(String recordTypeName);
 
 	LinkedMultiValueMap<String, String> buildDefaultFilters(String recordTypeName);
+
+	void convertLookupToLong(String recordTypeName, Map<String, Object> param);
 }
