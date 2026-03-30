@@ -61,7 +61,7 @@ public class RecordTypeServiceImpl implements RecordTypeService {
 		dynamicClassService.removeMappingClass(recordTypeName);
 		final RecordType removed = this.allRecordType.remove(recordTypeName);
 		if (removed != null) {
-			removed.getRecordtypeFields()
+			removed.getFieldList()
 					.stream()
 					.map(RecordTypeField::getName)
 					.forEach(this.allRecordType::remove);
@@ -86,7 +86,7 @@ public class RecordTypeServiceImpl implements RecordTypeService {
 	public LinkedMultiValueMap<String, String> buildDefaultFilters(String recordTypeName) {
 		LinkedMultiValueMap<String, String> param = new LinkedMultiValueMap<>();
 		RecordType recordType = getRecordType(recordTypeName);
-		recordType.getRecordtypeFields()
+		recordType.getFieldList()
 				.stream()
 				.filter(fld -> StringUtils.hasLength(fld.getFilterKey()))
 				.filter(fld -> StringUtils.hasLength(fld.getFilterVal()))
@@ -129,7 +129,7 @@ public class RecordTypeServiceImpl implements RecordTypeService {
 			List<RecordType> content = slice.getContent();
 			Map<String, RecordType> resultMap = new ConcurrentHashMap<>(applicationProperties.getGeneral().getRecordtypeMapInitSize());
 			content.forEach(rt -> {
-				log.debug("RecordType: {}, Fields size: {}", rt.getName(), rt.getRecordtypeFields().size());
+				log.debug("RecordType: {}, Fields size: {}", rt.getName(), rt.getFieldList().size());
 				resultMap.put(rt.getName(), rt);
 				allRecordType.putIfAbsent(rt.getName(), rt);
 			});

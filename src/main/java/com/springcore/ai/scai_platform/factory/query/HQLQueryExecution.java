@@ -130,7 +130,7 @@ class HQLQueryExecution<T> implements QueryExecutor<T> {
     @SuppressWarnings("unchecked")
     private Predicate createPredicate(Path<?> path, CriteriaBuilder cb, String value, String key, Class<?> javaType) {
         // หา Filter Operation จาก RecordTypeField
-        String op = recordType.getRecordtypeFields().stream()
+        String op = recordType.getFieldList().stream()
                 .filter(f -> key.equals(f.getName()))
                 .map(RecordTypeField::getFilterOp)
                 .findFirst()

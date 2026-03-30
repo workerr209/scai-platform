@@ -66,7 +66,7 @@ public class DynamicClassServiceImpl implements DynamicClassService {
             String customSelect = recordType.getCustomSelect();
             String[] customSelectArr = StringUtils.split(customSelect, ",");
             List<RecordTypeField> fields = new ArrayList<>();
-            recordType.getRecordtypeFields().forEach(field -> {
+            recordType.getFieldList().forEach(field -> {
                 String fldName = field.getName();
                 if (isFieldInSelect(fldName, customSelectArr)) {
                     fields.add(field);

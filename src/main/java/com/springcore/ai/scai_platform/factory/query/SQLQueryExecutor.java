@@ -164,7 +164,7 @@ final class SQLQueryExecutor<T> implements QueryExecutor<T> {
             if (values == null || values.isEmpty() || StringUtils.isBlank(values.get(0))) return;
 
             // ค้นหา Metadata ของฟิลด์นี้
-            var fldMetadata = recordType.getRecordtypeFields().stream()
+            var fldMetadata = recordType.getFieldList().stream()
                     .filter(f -> f.getName().equals(key))
                     .findFirst();
 
@@ -186,7 +186,7 @@ final class SQLQueryExecutor<T> implements QueryExecutor<T> {
     private void bindParameters(NativeQuery<?> query, RecordTypePropertyProcessor processor, String sql, List<String> conjParam) {
         String userTimezone = applicationProperties.getGeneral().getDefaultUserPreference().getTimezone();
         List<String> processedKeys = new ArrayList<>();
-        recordType.getRecordtypeFields().stream()
+        recordType.getFieldList().stream()
                 .filter(fld -> "DATE".equals(fld.getDataType()))
                 .forEach(fld -> {
                     String fldName = fld.getName();

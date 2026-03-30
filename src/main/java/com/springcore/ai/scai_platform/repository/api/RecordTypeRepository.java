@@ -14,7 +14,7 @@ public interface RecordTypeRepository extends JpaRepository<RecordType, Long> {
 	@Query("select p from RecordType p where p.name = :recordtypeName")
 	RecordType findRecordTypeByName(@Param("recordtypeName") String recordtypeName);
 
-	@Query("SELECT DISTINCT r FROM RecordType r LEFT JOIN FETCH r.recordtypeFields")
+	@Query("SELECT DISTINCT r FROM RecordType r LEFT JOIN FETCH r.fieldList")
 	List<RecordType> findAllWithFields();
 
 	Slice<RecordType> readAllBy(Pageable pageable);

@@ -140,6 +140,6 @@ public class RecordType extends GenericPersistentObject {
     @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn(name = "parent_id")
     @BatchSize(size = 20)
-    private List<RecordTypeField> recordtypeFields = new ArrayList<>();
+    private List<RecordTypeField> fieldList = new ArrayList<>();
 
 }
