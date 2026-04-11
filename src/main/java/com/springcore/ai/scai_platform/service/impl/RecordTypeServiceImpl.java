@@ -53,6 +53,7 @@ public class RecordTypeServiceImpl implements RecordTypeService {
 		ensureLoadAcRecordType(recordTypeName);
 		RecordType acRecordtype = this.allRecordType.get(recordTypeName);
 		Assert.notNull(acRecordtype, "RecordType : " + recordTypeName + " not found");
+		log.info("Found RecordType [{}] Field Cnt : {}", recordTypeName, acRecordtype.getFieldsCnt());
 		return acRecordtype;
 	}
 

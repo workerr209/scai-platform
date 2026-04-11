@@ -142,4 +142,7 @@ public class RecordType extends GenericPersistentObject {
     @BatchSize(size = 20)
     private List<RecordTypeField> fieldList = new ArrayList<>();
 
+    public int getFieldsCnt() {
+        return fieldList.size();
+    }
 }
