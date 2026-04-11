@@ -1,7 +1,7 @@
 # Read Me First
 The following was discovered as part of building this project:
 
-* The original package name 'com.springcore.ai.scai-platform' is invalid and this project uses 'com.springcore.ai.scai_platform' instead.
+* The original package name 'com.springcore.ai.scai-platform' is invalid and this project uses 'com.springcore.ai.scaiplatform' instead.
 
 # Getting Started
 
