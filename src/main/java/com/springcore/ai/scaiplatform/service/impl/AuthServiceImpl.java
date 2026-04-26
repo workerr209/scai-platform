@@ -5,7 +5,9 @@ import com.springcore.ai.scaiplatform.dto.LoginRequest;
 import com.springcore.ai.scaiplatform.dto.PinLoginRequest;
 import com.springcore.ai.scaiplatform.dto.RegisterRequest;
 import com.springcore.ai.scaiplatform.dto.UserResponse;
+import com.springcore.ai.scaiplatform.entity.Employee;
 import com.springcore.ai.scaiplatform.entity.User;
+import com.springcore.ai.scaiplatform.repository.api.EmployeeRepository;
 import com.springcore.ai.scaiplatform.repository.api.UserRepository;
 import com.springcore.ai.scaiplatform.security.jwt.JwtTokenProvider;
 import com.springcore.ai.scaiplatform.service.api.AuthService;
@@ -19,12 +21,15 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Date;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {
 
     private final UserRepository userRepository;
+    private final EmployeeRepository employeeRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
     private final AuthenticationManager authenticationManager;
@@ -48,8 +53,14 @@ public class AuthServiceImpl implements AuthService {
             throw new IllegalArgumentException("Email already registered: " + request.getEmail());
         }
 
+        Employee employee = employeeRepository.save(Employee
+                .builder()
+                .name(request.getFullName())
+                .build());
+
         User user = User.builder()
                 .email(request.getEmail())
+                .emid(employee)
                 .username(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
                 .pin(passwordEncoder.encode("000000"))
@@ -150,7 +161,7 @@ public class AuthServiceImpl implements AuthService {
 
     /**
      * Builds a complete token-pair response for a given email address.
-     * Centralises token-generation logic so password-login and PIN-login
+     * Centralizes token-generation logic so password-login and PIN-login
      * share a single code path.
      */
     private AuthResponse buildAuthResponse(String email) {
