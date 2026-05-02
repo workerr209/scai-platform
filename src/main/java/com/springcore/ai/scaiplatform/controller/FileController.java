@@ -52,6 +52,16 @@ public class FileController {
     @GetMapping("/download/{fileName}")
     @ResponseBody
     public ResponseEntity<byte[]> downloadFile(@PathVariable String fileName) {
+        return readFile(fileName);
+    }
+
+    @GetMapping("/public/{fileName}")
+    @ResponseBody
+    public ResponseEntity<byte[]> publicFile(@PathVariable String fileName) {
+        return readFile(fileName);
+    }
+
+    private ResponseEntity<byte[]> readFile(String fileName) {
         try {
             byte[] bytes = fileService.downloadFile(fileName);
             if (bytes == null) {

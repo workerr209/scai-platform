@@ -10,7 +10,7 @@
 	</parent>
 	<groupId>com.springcore.ai</groupId>
 	<artifactId>scaiplatform</artifactId>
-	<version>0.0.33</version>
+	<version>0.0.37</version>
 	<name>Spring Core AI Platform</name>
 	<description>LLM Project for Spring Boot</description>
 
