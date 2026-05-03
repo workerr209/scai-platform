@@ -57,10 +57,14 @@ public class InkQuestServiceImpl implements InkQuestService {
                         currentProject.getId(),
                         InkChapterStatus.WRITING
                 ).orElse(null);
-        InkDailyEntry todayEntry = getEntryByDate(dateFromLocalDate(LocalDate.now()), ownerId);
+        List<InkDailyEntry> todayEntries = entryRepository.findByEmIdAndEntryDateBetweenOrderByEntryDateAsc(
+                ownerId,
+                dateFromLocalDate(LocalDate.now()),
+                endOfDay(dateFromLocalDate(LocalDate.now()))
+        );
 
-        long wordsToday = value(todayEntry != null ? todayEntry.getWords() : null);
-        long focusToday = value(todayEntry != null ? todayEntry.getFocusMinutes() : null);
+        long wordsToday = todayEntries.stream().mapToLong(e -> value(e.getWords())).sum();
+        long focusToday = todayEntries.stream().mapToLong(e -> value(e.getFocusMinutes())).sum();
         long wordsGoal = Math.max(1L, value(goals.getDailyWords()));
         long focusGoal = Math.max(1L, value(goals.getDailyFocus()));
         long todayScore = Math.min(100L, Math.round(((wordsToday / (double) wordsGoal) * 0.6 + (focusToday / (double) focusGoal) * 0.4) * 100));
@@ -223,7 +227,9 @@ public class InkQuestServiceImpl implements InkQuestService {
     public InkDailyEntry saveEntry(InkDailyEntry form) {
         Long ownerId = owner(form.getEmId());
         Date entryDate = startOfDay(form.getEntryDate() != null ? form.getEntryDate() : new Date());
-        InkDailyEntry previous = getEntryByDate(entryDate, ownerId);
+        InkDailyEntry previous = form.getId() != null
+                ? entryRepository.findByIdAndEmId(form.getId(), ownerId).orElse(null)
+                : null;
         InkDailyEntry previousSnapshot = copyEntry(previous);
         Long projectId = form.getProjectId();
         if (projectId == null && form.getChapterId() != null) {
@@ -409,14 +415,17 @@ public class InkQuestServiceImpl implements InkQuestService {
         LocalDate monday = LocalDate.now().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
         Date from = dateFromLocalDate(monday);
         Date to = endOfDay(dateFromLocalDate(monday.plusDays(6)));
-        Map<String, InkDailyEntry> entriesByDate = entriesByDate(entryRepository.findByEmIdAndEntryDateBetweenOrderByEntryDateAsc(emId, from, to));
+        List<InkDailyEntry> entries = entryRepository.findByEmIdAndEntryDateBetweenOrderByEntryDateAsc(emId, from, to);
         List<InkWeeklyPoint> out = new ArrayList<>();
         SimpleDateFormat labelFormat = new SimpleDateFormat("EEE", Locale.US);
         long dailyWords = Math.max(1L, value(goals.getDailyWords()));
         for (int i = 0; i < 7; i++) {
             LocalDate day = monday.plusDays(i);
-            InkDailyEntry entry = entriesByDate.get(dateKey(dateFromLocalDate(day)));
-            long words = value(entry != null ? entry.getWords() : null);
+            String key = dateKey(dateFromLocalDate(day));
+            long words = entries.stream()
+                    .filter(e -> dateKey(e.getEntryDate()).equals(key))
+                    .mapToLong(e -> value(e.getWords()))
+                    .sum();
             out.add(InkWeeklyPoint.builder()
                     .date(labelFormat.format(dateFromLocalDate(day)))
                     .words(words)

@@ -14,12 +14,7 @@ import java.io.Serial;
 import java.util.Date;
 
 @Entity
-@Table(
-        name = "iq_daily_entry",
-        uniqueConstraints = {
-                @UniqueConstraint(name = "uk_iq_daily_entry_em_date", columnNames = {"emId", "entryDate"})
-        }
-)
+@Table(name = "iq_daily_entry")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
