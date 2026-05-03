@@ -48,11 +48,11 @@ public class InkDailyEntry extends GenericPersistentObject {
     @Column(name = "entryDate", nullable = false)
     private Date entryDate;
 
-    private Long words;
+    private Integer words;
 
-    private Long focusMinutes;
+    private Integer focusMinutes;
 
-    private Long sessions;
+    private Integer sessions;
 
     @Enumerated(EnumType.STRING)
     private InkWritingFlow flow;

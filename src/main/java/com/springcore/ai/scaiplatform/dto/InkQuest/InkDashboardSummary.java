@@ -14,13 +14,13 @@ import java.util.List;
 @AllArgsConstructor
 @Data
 public class InkDashboardSummary {
-    private Long todayScore;
-    private Long wordsToday;
-    private Long wordsGoal;
-    private Long focusToday;
-    private Long focusGoal;
-    private Long streakDays;
-    private Long consistencyGoal;
+    private Integer todayScore;
+    private Integer wordsToday;
+    private Integer wordsGoal;
+    private Integer focusToday;
+    private Integer focusGoal;
+    private Integer streakDays;
+    private Integer consistencyGoal;
     private List<InkWeeklyPoint> weekly;
     private List<InkCumulativePoint> cumulative;
     private List<InkHeatmapDay> heatmap;

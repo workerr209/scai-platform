@@ -42,11 +42,17 @@ public class InkProject extends GenericPersistentObject {
     @Column(columnDefinition = "TEXT")
     private String summary;
 
-    private Long totalChapters;
+    private Integer totalChapters;
 
-    private Long finishedChapters;
+    private Integer finishedChapters;
 
-    private Long progressPercent;
+    private Integer progressPercent;
+
+    private Integer defaultChapterGoal;
+
+    private Integer weeklyWordGoal;
+
+    private Integer monthlyWordGoal;
 
     private Date updatedAt;
 

@@ -11,5 +11,5 @@ import lombok.NoArgsConstructor;
 @Data
 public class InkCumulativePoint {
     private String month;
-    private Long words;
+    private Integer words;
 }

@@ -63,11 +63,11 @@ public class InkQuestServiceImpl implements InkQuestService {
                 endOfDay(dateFromLocalDate(LocalDate.now()))
         );
 
-        long wordsToday = todayEntries.stream().mapToLong(e -> value(e.getWords())).sum();
-        long focusToday = todayEntries.stream().mapToLong(e -> value(e.getFocusMinutes())).sum();
-        long wordsGoal = Math.max(1L, value(goals.getDailyWords()));
-        long focusGoal = Math.max(1L, value(goals.getDailyFocus()));
-        long todayScore = Math.min(100L, Math.round(((wordsToday / (double) wordsGoal) * 0.6 + (focusToday / (double) focusGoal) * 0.4) * 100));
+        int wordsToday = todayEntries.stream().mapToInt(e -> value(e.getWords())).sum();
+        int focusToday = todayEntries.stream().mapToInt(e -> value(e.getFocusMinutes())).sum();
+        int wordsGoal = Math.max(1, value(goals.getDailyWords()));
+        int focusGoal = Math.max(1, value(goals.getDailyFocus()));
+        int todayScore = Math.min(100, (int) Math.round(((wordsToday / (double) wordsGoal) * 0.6 + (focusToday / (double) focusGoal) * 0.4) * 100));
 
         return InkDashboardSummary.builder()
                 .todayScore(todayScore)
@@ -102,18 +102,25 @@ public class InkQuestServiceImpl implements InkQuestService {
         Long ownerId = owner(form.getEmId());
         ensureSetup(ownerId);
         boolean creating = form.getId() == null;
-        Long requestedChapters = Math.max(1L, defaultLong(form.getTotalChapters(), 20L));
+        Integer requestedChapters = Math.max(1, defaultInt(form.getTotalChapters(), 20));
 
         InkProject target = creating ? new InkProject() : getProject(form.getId(), ownerId);
+        Integer defaultChapterGoal = Math.max(
+                1,
+                defaultInt(form.getDefaultChapterGoal(), creating ? 1000 : defaultInt(target.getDefaultChapterGoal(), 1000))
+        );
         target.setEmId(ownerId);
         target.setTitle(form.getTitle());
         target.setCover(normalizeCover(form.getCover()));
         target.setSummary(form.getSummary());
+        target.setDefaultChapterGoal(defaultChapterGoal);
+        target.setWeeklyWordGoal(form.getWeeklyWordGoal());
+        target.setMonthlyWordGoal(form.getMonthlyWordGoal());
         target.setUpdatedAt(new Date());
         if (creating) {
             target.setTotalChapters(requestedChapters);
-            target.setFinishedChapters(0L);
-            target.setProgressPercent(0L);
+            target.setFinishedChapters(0);
+            target.setProgressPercent(0);
         } else {
             target.setTotalChapters(target.getTotalChapters());
             target.setFinishedChapters(target.getFinishedChapters());
@@ -121,7 +128,7 @@ public class InkQuestServiceImpl implements InkQuestService {
         }
         InkProject saved = projectRepository.save(target);
         if (creating) {
-            createInitialChapters(ownerId, saved.getId(), requestedChapters);
+            createInitialChapters(ownerId, saved.getId(), requestedChapters, defaultChapterGoal);
             syncProjectProgress(ownerId, saved.getId());
             settingsRepository.findByEmId(ownerId).ifPresent(settings -> {
                 if (settings.getDefaultProjectId() == null) {
@@ -172,8 +179,8 @@ public class InkQuestServiceImpl implements InkQuestService {
         target.setChapterNo(form.getChapterNo());
         target.setTitle(form.getTitle());
         target.setStatus(form.getStatus() != null ? form.getStatus() : InkChapterStatus.PENDING);
-        target.setGoalWords(defaultLong(form.getGoalWords(), 1000L));
-        target.setWrittenWords(defaultLong(form.getWrittenWords(), 0L));
+        target.setGoalWords(defaultInt(form.getGoalWords(), 1000));
+        target.setWrittenWords(defaultInt(form.getWrittenWords(), 0));
         target.setNotes(form.getNotes());
         target.setUpdatedAt(new Date());
         InkChapter saved = chapterRepository.save(target);
@@ -241,9 +248,9 @@ public class InkQuestServiceImpl implements InkQuestService {
         target.setEntryDate(entryDate);
         target.setProjectId(projectId);
         target.setChapterId(form.getChapterId());
-        target.setWords(defaultLong(form.getWords(), 0L));
-        target.setFocusMinutes(defaultLong(form.getFocusMinutes(), 0L));
-        target.setSessions(defaultLong(form.getSessions(), 1L));
+        target.setWords(defaultInt(form.getWords(), 0));
+        target.setFocusMinutes(defaultInt(form.getFocusMinutes(), 0));
+        target.setSessions(defaultInt(form.getSessions(), 1));
         target.setFlow(form.getFlow());
         target.setNote(form.getNote());
         target.setQuality(form.getQuality() != null ? form.getQuality() : toQuality(target.getWords(), getGoals(ownerId).getDailyWords()));
@@ -265,10 +272,10 @@ public class InkQuestServiceImpl implements InkQuestService {
         Long ownerId = owner(form.getEmId());
         InkWritingGoal target = goalRepository.findByEmId(ownerId).orElseGet(InkWritingGoal::new);
         target.setEmId(ownerId);
-        target.setDailyWords(Math.max(1L, value(form.getDailyWords())));
-        target.setMonthlyWords(Math.max(1L, value(form.getMonthlyWords())));
-        target.setDailyFocus(Math.max(1L, value(form.getDailyFocus())));
-        target.setStreakTarget(Math.max(1L, value(form.getStreakTarget())));
+        target.setDailyWords(Math.max(1, value(form.getDailyWords())));
+        target.setMonthlyWords(Math.max(1, value(form.getMonthlyWords())));
+        target.setDailyFocus(Math.max(1, value(form.getDailyFocus())));
+        target.setStreakTarget(Math.max(1, value(form.getStreakTarget())));
         return goalRepository.save(target);
     }
 
@@ -344,16 +351,16 @@ public class InkQuestServiceImpl implements InkQuestService {
         }
     }
 
-    private void createInitialChapters(Long emId, Long projectId, Long totalChapters) {
-        for (long i = 1; i <= totalChapters; i++) {
+    private void createInitialChapters(Long emId, Long projectId, Integer totalChapters, Integer defaultChapterGoal) {
+        for (int i = 1; i <= totalChapters; i++) {
             InkChapter chapter = InkChapter.builder()
                     .emId(emId)
                     .projectId(projectId)
                     .chapterNo(i)
                     .title("Chapter " + i)
                     .status(i == 1 ? InkChapterStatus.WRITING : InkChapterStatus.PENDING)
-                    .goalWords(1000L)
-                    .writtenWords(0L)
+                    .goalWords(defaultInt(defaultChapterGoal, 1000))
+                    .writtenWords(0)
                     .updatedAt(new Date())
                     .build();
             chapterRepository.save(chapter);
@@ -364,7 +371,7 @@ public class InkQuestServiceImpl implements InkQuestService {
         Set<Long> touchedProjectIds = new HashSet<>();
         if (previous != null && previous.getChapterId() != null) {
             chapterRepository.findByIdAndEmId(previous.getChapterId(), emId).ifPresent(chapter -> {
-                chapter.setWrittenWords(Math.max(0L, value(chapter.getWrittenWords()) - value(previous.getWords())));
+                chapter.setWrittenWords(Math.max(0, value(chapter.getWrittenWords()) - value(previous.getWords())));
                 chapter.setUpdatedAt(new Date());
                 chapterRepository.save(chapter);
                 touchedProjectIds.add(chapter.getProjectId());
@@ -401,11 +408,11 @@ public class InkQuestServiceImpl implements InkQuestService {
     private void syncProjectProgress(Long emId, Long projectId) {
         if (projectId == null) return;
         projectRepository.findByIdAndEmId(projectId, emId).ifPresent(project -> {
-            long total = chapterRepository.countByEmIdAndProjectId(emId, projectId);
-            long finished = chapterRepository.countByEmIdAndProjectIdAndStatus(emId, projectId, InkChapterStatus.FINISHED);
+            int total = safeInt(chapterRepository.countByEmIdAndProjectId(emId, projectId));
+            int finished = safeInt(chapterRepository.countByEmIdAndProjectIdAndStatus(emId, projectId, InkChapterStatus.FINISHED));
             project.setTotalChapters(total);
             project.setFinishedChapters(finished);
-            project.setProgressPercent(total > 0 ? Math.round((finished / (double) total) * 100) : 0L);
+            project.setProgressPercent(total > 0 ? (int) Math.round((finished / (double) total) * 100) : 0);
             project.setUpdatedAt(new Date());
             projectRepository.save(project);
         });
@@ -418,18 +425,18 @@ public class InkQuestServiceImpl implements InkQuestService {
         List<InkDailyEntry> entries = entryRepository.findByEmIdAndEntryDateBetweenOrderByEntryDateAsc(emId, from, to);
         List<InkWeeklyPoint> out = new ArrayList<>();
         SimpleDateFormat labelFormat = new SimpleDateFormat("EEE", Locale.US);
-        long dailyWords = Math.max(1L, value(goals.getDailyWords()));
+        int dailyWords = Math.max(1, value(goals.getDailyWords()));
         for (int i = 0; i < 7; i++) {
             LocalDate day = monday.plusDays(i);
             String key = dateKey(dateFromLocalDate(day));
-            long words = entries.stream()
+            int words = entries.stream()
                     .filter(e -> dateKey(e.getEntryDate()).equals(key))
-                    .mapToLong(e -> value(e.getWords()))
+                    .mapToInt(e -> value(e.getWords()))
                     .sum();
             out.add(InkWeeklyPoint.builder()
                     .date(labelFormat.format(dateFromLocalDate(day)))
                     .words(words)
-                    .score(Math.min(100L, Math.round((words / (double) dailyWords) * 100)))
+                    .score(Math.min(100, (int) Math.round((words / (double) dailyWords) * 100)))
                     .build());
         }
         return out;
@@ -441,12 +448,12 @@ public class InkQuestServiceImpl implements InkQuestService {
         Date to = endOfDay(dateFromLocalDate(today));
         List<InkDailyEntry> entries = entryRepository.findByEmIdAndEntryDateBetweenOrderByEntryDateAsc(emId, from, to);
         List<InkCumulativePoint> out = new ArrayList<>();
-        long running = 0L;
+        int running = 0;
         for (int month = 1; month <= today.getMonthValue(); month++) {
             final int currentMonth = month;
-            long words = entries.stream()
+            int words = entries.stream()
                     .filter(e -> toLocalDate(e.getEntryDate()).getMonthValue() == currentMonth)
-                    .mapToLong(e -> value(e.getWords()))
+                    .mapToInt(e -> value(e.getWords()))
                     .sum();
             running += words;
             out.add(InkCumulativePoint.builder()
@@ -478,7 +485,7 @@ public class InkQuestServiceImpl implements InkQuestService {
         return out;
     }
 
-    private long currentStreak(Long emId) {
+    private int currentStreak(Long emId) {
         LocalDate cursor = LocalDate.now();
         Set<String> loggedDates = new HashSet<>();
         entryRepository.findByEmIdAndEntryDateBetweenOrderByEntryDateAsc(
@@ -491,7 +498,7 @@ public class InkQuestServiceImpl implements InkQuestService {
         if (!loggedDates.contains(dateKey(dateFromLocalDate(cursor)))) {
             cursor = cursor.minusDays(1);
         }
-        long streak = 0L;
+        int streak = 0;
         while (loggedDates.contains(dateKey(dateFromLocalDate(cursor)))) {
             streak++;
             cursor = cursor.minusDays(1);
@@ -499,8 +506,8 @@ public class InkQuestServiceImpl implements InkQuestService {
         return streak;
     }
 
-    private InkDayQuality toQuality(Long words, Long goal) {
-        double ratio = value(words) / (double) Math.max(1L, value(goal));
+    private InkDayQuality toQuality(Integer words, Integer goal) {
+        double ratio = value(words) / (double) Math.max(1, value(goal));
         if (ratio >= 0.8) return InkDayQuality.GOOD;
         if (ratio >= 0.4) return InkDayQuality.FAIR;
         if (ratio > 0) return InkDayQuality.POOR;
@@ -510,10 +517,10 @@ public class InkQuestServiceImpl implements InkQuestService {
     private InkWritingGoal defaultGoals(Long emId) {
         return InkWritingGoal.builder()
                 .emId(emId)
-                .dailyWords(1000L)
-                .monthlyWords(20000L)
-                .dailyFocus(60L)
-                .streakTarget(7L)
+                .dailyWords(1000)
+                .monthlyWords(20000)
+                .dailyFocus(60)
+                .streakTarget(7)
                 .build();
     }
 
@@ -546,12 +553,16 @@ public class InkQuestServiceImpl implements InkQuestService {
         return cover;
     }
 
-    private long value(Long n) {
-        return n != null ? n : 0L;
+    private int value(Integer n) {
+        return n != null ? n : 0;
     }
 
-    private Long defaultLong(Long value, Long fallback) {
+    private Integer defaultInt(Integer value, Integer fallback) {
         return value != null ? value : fallback;
+    }
+
+    private int safeInt(long value) {
+        return value > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) value;
     }
 
     private Date startOfDay(Date date) {

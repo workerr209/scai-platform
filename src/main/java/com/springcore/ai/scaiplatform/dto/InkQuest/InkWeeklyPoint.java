@@ -11,6 +11,6 @@ import lombok.NoArgsConstructor;
 @Data
 public class InkWeeklyPoint {
     private String date;
-    private Long score;
-    private Long words;
+    private Integer score;
+    private Integer words;
 }

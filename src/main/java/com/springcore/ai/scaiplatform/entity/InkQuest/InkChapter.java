@@ -39,16 +39,16 @@ public class InkChapter extends GenericPersistentObject {
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private Long projectId;
 
-    private Long chapterNo;
+    private Integer chapterNo;
 
     private String title;
 
     @Enumerated(EnumType.STRING)
     private InkChapterStatus status;
 
-    private Long goalWords;
+    private Integer goalWords;
 
-    private Long writtenWords;
+    private Integer writtenWords;
 
     @Column(columnDefinition = "TEXT")
     private String notes;

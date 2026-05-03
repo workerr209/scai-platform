@@ -37,13 +37,13 @@ public class InkWritingGoal extends GenericPersistentObject {
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private Long emId;
 
-    private Long dailyWords;
+    private Integer dailyWords;
 
-    private Long monthlyWords;
+    private Integer monthlyWords;
 
-    private Long dailyFocus;
+    private Integer dailyFocus;
 
-    private Long streakTarget;
+    private Integer streakTarget;
 
     @JsonProperty("emId")
     public LookupItem getEmLookup() {
