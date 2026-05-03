@@ -11,6 +11,7 @@ import jakarta.validation.ValidationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
@@ -19,7 +20,6 @@ import reactor.core.publisher.Sinks;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
@@ -36,26 +36,32 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     @Override
-    public Flux<NotificationDTO> getNotificationStream(Long userId) {
+    public Flux<ServerSentEvent<NotificationDTO>> getNotificationStream(Long userId) {
         if (UserContext.getUserId() == null || userId.compareTo(UserContext.getUserId()) != 0) {
             throw new ValidationException("Invalid user id");
         }
 
         log.info(">>> User {} is connecting to Notification Stream (SSE)", userId);
-        Flux<NotificationDTO> notifications = userSinks.computeIfAbsent(userId, k ->
-                        Sinks.many().multicast().onBackpressureBuffer()
-                ).asFlux()
+
+        Flux<ServerSentEvent<NotificationDTO>> notifications = userSinks
+                .computeIfAbsent(userId, k -> Sinks.many().multicast().onBackpressureBuffer())
+                .asFlux()
+                .map(dto -> ServerSentEvent.<NotificationDTO>builder()
+                        .event("notification")
+                        .data(dto)
+                        .build())
                 .doOnCancel(() -> {
                     log.info("<<< User {} disconnected from stream", userId);
                     userSinks.remove(userId);
                 })
                 .doOnTerminate(() -> userSinks.remove(userId));
 
-        Flux<NotificationDTO> heartbeat = Flux.interval(Duration.ofSeconds(45))
-                .mapNotNull(tick -> null);
+        Flux<ServerSentEvent<NotificationDTO>> heartbeat = Flux.interval(Duration.ofSeconds(45))
+                .map(tick -> ServerSentEvent.<NotificationDTO>builder()
+                        .comment("keepalive")
+                        .build());
 
-        return Flux.merge(notifications, heartbeat)
-                .filter(Objects::nonNull);
+        return Flux.merge(notifications, heartbeat);
     }
 
     @Override

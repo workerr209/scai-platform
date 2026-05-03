@@ -6,6 +6,7 @@ import com.springcore.ai.scaiplatform.service.api.NotificationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -23,7 +24,7 @@ public class NotificationController {
     private final NotificationService notificationService;
 
     @GetMapping(path = "/stream/{userId}", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public Flux<NotificationDTO> stream(@PathVariable Long userId) {
+    public Flux<ServerSentEvent<NotificationDTO>> stream(@PathVariable Long userId) {
         return notificationService.getNotificationStream(userId);
     }
 
