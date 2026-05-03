@@ -16,8 +16,10 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Sinks;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
@@ -40,7 +42,7 @@ public class NotificationServiceImpl implements NotificationService {
         }
 
         log.info(">>> User {} is connecting to Notification Stream (SSE)", userId);
-        return userSinks.computeIfAbsent(userId, k ->
+        Flux<NotificationDTO> notifications = userSinks.computeIfAbsent(userId, k ->
                         Sinks.many().multicast().onBackpressureBuffer()
                 ).asFlux()
                 .doOnCancel(() -> {
@@ -48,6 +50,12 @@ public class NotificationServiceImpl implements NotificationService {
                     userSinks.remove(userId);
                 })
                 .doOnTerminate(() -> userSinks.remove(userId));
+
+        Flux<NotificationDTO> heartbeat = Flux.interval(Duration.ofSeconds(45))
+                .mapNotNull(tick -> null);
+
+        return Flux.merge(notifications, heartbeat)
+                .filter(Objects::nonNull);
     }
 
     @Override
@@ -80,11 +88,6 @@ public class NotificationServiceImpl implements NotificationService {
             log.error("Failed to process message from RabbitMQ: {}", e.getMessage());
         }
     }
-
-    /*@Override
-    public void sendToUsers(List<Long> userIds, NotificationDTO payload) {
-        userIds.forEach(id -> sendToUser(id, payload));
-    }*/
 
     @Override
     public List<Notification> getHistory(Long userId) {
