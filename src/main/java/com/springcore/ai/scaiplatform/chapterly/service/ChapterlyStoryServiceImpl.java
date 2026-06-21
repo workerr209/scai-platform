@@ -4,10 +4,12 @@ import com.springcore.ai.scaiplatform.chapterly.domain.ChapterlyAudienceRating;
 import com.springcore.ai.scaiplatform.chapterly.domain.ChapterlyLanguage;
 import com.springcore.ai.scaiplatform.chapterly.domain.ChapterlyStoryStatus;
 import com.springcore.ai.scaiplatform.chapterly.domain.ChapterlyStoryVisibility;
+import com.springcore.ai.scaiplatform.chapterly.config.ChapterlyMessagingConfig;
 import com.springcore.ai.scaiplatform.chapterly.dto.ChapterlyStoryResponse;
 import com.springcore.ai.scaiplatform.chapterly.dto.CreateChapterlyStoryRequest;
 import com.springcore.ai.scaiplatform.chapterly.dto.UpdateChapterlyStoryRequest;
 import com.springcore.ai.scaiplatform.chapterly.entity.ChapterlyStory;
+import com.springcore.ai.scaiplatform.chapterly.messaging.ChapterlyEventPublisher;
 import com.springcore.ai.scaiplatform.chapterly.repository.ChapterlyStoryRepository;
 import com.springcore.ai.scaiplatform.core.entity.User;
 import lombok.RequiredArgsConstructor;
@@ -16,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 @Service
@@ -24,6 +27,7 @@ public class ChapterlyStoryServiceImpl implements ChapterlyStoryService {
 
     private final ChapterlyStoryRepository storyRepository;
     private final ChapterlyOwnershipService ownershipService;
+    private final ChapterlyEventPublisher eventPublisher;
 
     @Override
     @Transactional(readOnly = true)
@@ -71,6 +75,7 @@ public class ChapterlyStoryServiceImpl implements ChapterlyStoryService {
     @Transactional
     public ChapterlyStoryResponse updateStory(Long ownerUserId, Long storyId, UpdateChapterlyStoryRequest request) {
         ChapterlyStory story = ownershipService.requireStory(storyId, ownerUserId);
+        ChapterlyStoryStatus previousStatus = story.getStatus();
 
         if (StringUtils.isNotBlank(request.getTitle())) {
             story.setTitle(request.getTitle().trim());
@@ -134,7 +139,10 @@ public class ChapterlyStoryServiceImpl implements ChapterlyStoryService {
 
         story.setProgressPercent(calculateProgressPercent(story.getCurrentWordCount(), story.getTargetWordCount()));
 
-        return ChapterlyStoryResponse.from(storyRepository.save(story));
+        ChapterlyStory saved = storyRepository.save(story);
+        publishStoryPublishedIfNeeded(ownerUserId, previousStatus, saved);
+
+        return ChapterlyStoryResponse.from(saved);
     }
 
     @Override
@@ -172,5 +180,20 @@ public class ChapterlyStoryServiceImpl implements ChapterlyStoryService {
 
     private <T> T defaultIfNull(T value, T defaultValue) {
         return value == null ? defaultValue : value;
+    }
+
+    private void publishStoryPublishedIfNeeded(Long ownerUserId, ChapterlyStoryStatus previousStatus, ChapterlyStory story) {
+        if (previousStatus == ChapterlyStoryStatus.PUBLISHED || story.getStatus() != ChapterlyStoryStatus.PUBLISHED) {
+            return;
+        }
+
+        eventPublisher.publishAfterCommit(
+                ChapterlyMessagingConfig.STORY_PUBLISHED,
+                ownerUserId,
+                ownerUserId,
+                "story",
+                story.getId(),
+                Map.of("title", story.getTitle())
+        );
     }
 }

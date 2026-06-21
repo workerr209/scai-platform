@@ -10,6 +10,8 @@ import java.util.Optional;
 
 @Repository
 public interface ChapterlyWritingEntryRepository extends JpaRepository<ChapterlyWritingEntry, Long> {
+    List<ChapterlyWritingEntry> findByOwnerIdOrderByEntryDateDesc(Long ownerId);
+
     List<ChapterlyWritingEntry> findByOwnerIdAndEntryDateBetweenOrderByEntryDateDesc(
             Long ownerId,
             LocalDate startDate,

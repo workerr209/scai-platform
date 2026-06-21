@@ -42,6 +42,9 @@ public class AuthServiceImpl implements AuthService {
     @Value("${app.security.default-reset-password}")
     private String defaultResetPassword;
 
+    @Value("${jwt.remember-me-refresh-expiration-in-ms:2592000000}")
+    private long rememberMeRefreshTokenExpirationMs;
+
     // -------------------------------------------------------------------------
     // Registration
     // -------------------------------------------------------------------------
@@ -88,7 +91,7 @@ public class AuthServiceImpl implements AuthService {
                 .orElseThrow(() -> new IllegalStateException(
                         "Authenticated user not found in database: " + request.getEmail()));
 
-        return buildAuthResponse(user.getEmail());
+        return buildAuthResponse(user.getEmail(), request.isKeepMeSignedIn());
     }
 
     // -------------------------------------------------------------------------
@@ -106,7 +109,7 @@ public class AuthServiceImpl implements AuthService {
             throw new BadCredentialsException("Invalid email or PIN");
         }
 
-        return buildAuthResponse(user.getEmail());
+        return buildAuthResponse(user.getEmail(), false);
     }
 
     // -------------------------------------------------------------------------
@@ -164,11 +167,15 @@ public class AuthServiceImpl implements AuthService {
      * Centralizes token-generation logic so password-login and PIN-login
      * share a single code path.
      */
-    private AuthResponse buildAuthResponse(String email) {
+    private AuthResponse buildAuthResponse(String email, boolean keepMeSignedIn) {
+        long refreshTokenExpirationMs = keepMeSignedIn
+                ? rememberMeRefreshTokenExpirationMs
+                : jwtTokenProvider.getRefreshTokenExpirationMs();
+
         return AuthResponse.builder()
                 .accessToken(jwtTokenProvider.generateAccessToken(email))
-                .refreshToken(jwtTokenProvider.generateRefreshToken(email))   // @JsonIgnore — for cookie only
-                .refreshTokenExpirationMs(jwtTokenProvider.getRefreshTokenExpirationMs())
+                .refreshToken(jwtTokenProvider.generateRefreshToken(email, refreshTokenExpirationMs))   // @JsonIgnore — for cookie only
+                .refreshTokenExpirationMs(refreshTokenExpirationMs)
                 .build();
     }
 }

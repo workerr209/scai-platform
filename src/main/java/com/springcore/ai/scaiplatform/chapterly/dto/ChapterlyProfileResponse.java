@@ -19,6 +19,8 @@ public class ChapterlyProfileResponse {
     private Long id;
     private Long userId;
     private String displayName;
+    private String avatarFileId;
+    private String avatarUrl;
     private ChapterlyLanguage preferredLanguage;
     private Set<ChapterlyRole> roles;
     private ChapterlyMode defaultMode;
@@ -30,6 +32,8 @@ public class ChapterlyProfileResponse {
                 .id(profile.getId())
                 .userId(profile.getUser().getId())
                 .displayName(profile.getDisplayName())
+                .avatarFileId(profile.getAvatarFileId())
+                .avatarUrl(profile.getAvatarUrl())
                 .preferredLanguage(profile.getPreferredLanguage())
                 .roles(profile.getRoles())
                 .defaultMode(profile.getDefaultMode())

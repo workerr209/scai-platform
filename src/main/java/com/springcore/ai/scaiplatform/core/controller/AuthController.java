@@ -50,7 +50,7 @@ public class AuthController {
     public ResponseEntity<AuthResponse> login(@RequestBody @Valid LoginRequest request,
                                               HttpServletResponse response) {
         AuthResponse authResponse = authService.login(request);
-        attachRefreshCookie(response, authResponse);
+        attachRefreshCookie(response, authResponse, request.isKeepMeSignedIn());
         return ResponseEntity.ok(authResponse);
         // Note: authResponse.refreshToken is @JsonIgnore — only accessToken is in the JSON body
     }
@@ -71,7 +71,7 @@ public class AuthController {
     public ResponseEntity<AuthResponse> loginWithPin(@RequestBody @Valid PinLoginRequest request,
                                                      HttpServletResponse response) {
         AuthResponse authResponse = authService.loginWithPin(request);
-        attachRefreshCookie(response, authResponse);
+        attachRefreshCookie(response, authResponse, false);
         return ResponseEntity.ok(authResponse);
     }
 
@@ -158,16 +158,20 @@ public class AuthController {
      * refreshTokenExpirationMs is in MILLISECONDS → divide by 1000.
      * Previous code passed ms directly, causing the cookie to expire ~1000× too late.
      */
-    private void attachRefreshCookie(HttpServletResponse response, AuthResponse authResponse) {
+    private void attachRefreshCookie(HttpServletResponse response, AuthResponse authResponse, boolean persistent) {
         long maxAgeSeconds = authResponse.getRefreshTokenExpirationMs() / 1000;
 
-        ResponseCookie cookie = ResponseCookie.from("refreshToken", authResponse.getRefreshToken())
+        ResponseCookie.ResponseCookieBuilder cookieBuilder = ResponseCookie.from("refreshToken", authResponse.getRefreshToken())
                 .httpOnly(true)
                 .secure(true)
                 .path("/api/auth/refresh")
-                .maxAge(maxAgeSeconds)                    // seconds — correctly converted
-                .sameSite("Strict")
-                .build();
+                .sameSite("Strict");
+
+        if (persistent) {
+            cookieBuilder.maxAge(maxAgeSeconds);          // seconds — correctly converted
+        }
+
+        ResponseCookie cookie = cookieBuilder.build();
 
         response.setHeader(HttpHeaders.SET_COOKIE, cookie.toString());
     }

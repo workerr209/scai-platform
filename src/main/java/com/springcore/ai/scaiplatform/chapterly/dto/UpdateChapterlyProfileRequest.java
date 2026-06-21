@@ -18,6 +18,12 @@ import java.util.Set;
 public class UpdateChapterlyProfileRequest {
     @Size(max = 120)
     private String displayName;
+
+    @Size(max = 120)
+    private String avatarFileId;
+
+    private String avatarUrl;
+
     private ChapterlyLanguage preferredLanguage;
     private Set<ChapterlyRole> roles;
     private ChapterlyMode defaultMode;

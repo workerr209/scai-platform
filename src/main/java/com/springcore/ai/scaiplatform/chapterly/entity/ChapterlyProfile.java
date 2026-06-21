@@ -56,6 +56,12 @@ public class ChapterlyProfile {
     @Column(nullable = false, length = 120)
     private String displayName;
 
+    @Column(length = 120)
+    private String avatarFileId;
+
+    @Column(columnDefinition = "TEXT")
+    private String avatarUrl;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 10)
     private ChapterlyLanguage preferredLanguage;

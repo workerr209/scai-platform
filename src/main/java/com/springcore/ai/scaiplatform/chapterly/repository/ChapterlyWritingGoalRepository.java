@@ -10,6 +10,8 @@ import java.util.Optional;
 
 @Repository
 public interface ChapterlyWritingGoalRepository extends JpaRepository<ChapterlyWritingGoal, Long> {
+    List<ChapterlyWritingGoal> findByOwnerIdOrderByStartDateDesc(Long ownerId);
+
     List<ChapterlyWritingGoal> findByOwnerIdAndActiveTrueOrderByStartDateDesc(Long ownerId);
 
     List<ChapterlyWritingGoal> findByStoryIdAndOwnerIdAndActiveTrueOrderByStartDateDesc(Long storyId, Long ownerId);

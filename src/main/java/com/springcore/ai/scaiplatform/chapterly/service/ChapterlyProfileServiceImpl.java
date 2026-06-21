@@ -42,6 +42,14 @@ public class ChapterlyProfileServiceImpl implements ChapterlyProfileService {
             profile.setDisplayName(request.getDisplayName().trim());
         }
 
+        if (request.getAvatarFileId() != null) {
+            profile.setAvatarFileId(StringUtils.trimToNull(request.getAvatarFileId()));
+        }
+
+        if (request.getAvatarUrl() != null) {
+            profile.setAvatarUrl(StringUtils.trimToNull(request.getAvatarUrl()));
+        }
+
         if (request.getPreferredLanguage() != null) {
             profile.setPreferredLanguage(request.getPreferredLanguage());
         }

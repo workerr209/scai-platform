@@ -1,11 +1,13 @@
 package com.springcore.ai.scaiplatform.chapterly.service;
 
+import com.springcore.ai.scaiplatform.chapterly.config.ChapterlyMessagingConfig;
 import com.springcore.ai.scaiplatform.chapterly.domain.ChapterlyChapterStatus;
 import com.springcore.ai.scaiplatform.chapterly.dto.ChapterlyChapterResponse;
 import com.springcore.ai.scaiplatform.chapterly.dto.CreateChapterlyChapterRequest;
 import com.springcore.ai.scaiplatform.chapterly.dto.UpdateChapterlyChapterRequest;
 import com.springcore.ai.scaiplatform.chapterly.entity.ChapterlyChapter;
 import com.springcore.ai.scaiplatform.chapterly.entity.ChapterlyStory;
+import com.springcore.ai.scaiplatform.chapterly.messaging.ChapterlyEventPublisher;
 import com.springcore.ai.scaiplatform.chapterly.repository.ChapterlyChapterRepository;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
@@ -13,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -20,6 +23,7 @@ public class ChapterlyChapterServiceImpl implements ChapterlyChapterService {
 
     private final ChapterlyChapterRepository chapterRepository;
     private final ChapterlyOwnershipService ownershipService;
+    private final ChapterlyEventPublisher eventPublisher;
 
     @Override
     @Transactional(readOnly = true)
@@ -64,6 +68,7 @@ public class ChapterlyChapterServiceImpl implements ChapterlyChapterService {
             UpdateChapterlyChapterRequest request
     ) {
         ChapterlyChapter chapter = ownershipService.requireChapter(storyId, chapterId, ownerUserId);
+        ChapterlyChapterStatus previousStatus = chapter.getStatus();
 
         if (StringUtils.isNotBlank(request.getTitle())) {
             chapter.setTitle(request.getTitle().trim());
@@ -87,7 +92,10 @@ public class ChapterlyChapterServiceImpl implements ChapterlyChapterService {
 
         chapter.setProgressPercent(calculateProgressPercent(chapter.getCurrentWordCount(), chapter.getTargetWordCount()));
 
-        return ChapterlyChapterResponse.from(chapterRepository.save(chapter));
+        ChapterlyChapter saved = chapterRepository.save(chapter);
+        publishChapterPublishedIfNeeded(ownerUserId, previousStatus, saved);
+
+        return ChapterlyChapterResponse.from(saved);
     }
 
     @Override
@@ -111,5 +119,23 @@ public class ChapterlyChapterServiceImpl implements ChapterlyChapterService {
         }
 
         return Math.min(100, (int) Math.round((currentWordCount * 100.0) / targetWordCount));
+    }
+
+    private void publishChapterPublishedIfNeeded(Long ownerUserId, ChapterlyChapterStatus previousStatus, ChapterlyChapter chapter) {
+        if (previousStatus == ChapterlyChapterStatus.PUBLISHED || chapter.getStatus() != ChapterlyChapterStatus.PUBLISHED) {
+            return;
+        }
+
+        eventPublisher.publishAfterCommit(
+                ChapterlyMessagingConfig.CHAPTER_PUBLISHED,
+                ownerUserId,
+                ownerUserId,
+                "chapter",
+                chapter.getId(),
+                Map.of(
+                        "storyId", chapter.getStory().getId(),
+                        "title", chapter.getTitle()
+                )
+        );
     }
 }
