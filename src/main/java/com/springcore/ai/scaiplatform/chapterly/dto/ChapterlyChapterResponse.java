@@ -23,6 +23,7 @@ public class ChapterlyChapterResponse {
     private Integer targetWordCount;
     private Integer currentWordCount;
     private Integer progressPercent;
+    private String body;
     private Instant createdAt;
     private Instant updatedAt;
 
@@ -37,6 +38,7 @@ public class ChapterlyChapterResponse {
                 .targetWordCount(chapter.getTargetWordCount())
                 .currentWordCount(chapter.getCurrentWordCount())
                 .progressPercent(chapter.getProgressPercent())
+                .body(chapter.getBody())
                 .createdAt(chapter.getCreatedAt())
                 .updatedAt(chapter.getUpdatedAt())
                 .build();

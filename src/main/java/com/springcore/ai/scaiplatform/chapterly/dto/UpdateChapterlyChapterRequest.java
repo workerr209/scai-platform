@@ -27,4 +27,6 @@ public class UpdateChapterlyChapterRequest {
 
     @PositiveOrZero
     private Integer currentWordCount;
+
+    private String body;
 }

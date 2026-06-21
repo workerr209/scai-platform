@@ -59,6 +59,9 @@ public class ChapterlyChapter extends ChapterlyOwnedEntity {
     private Integer currentWordCount;
     private Integer progressPercent;
 
+    @Column(columnDefinition = "LONGTEXT")
+    private String body;
+
     @PrePersist
     void chapterPrePersist() {
         if (status == null) {

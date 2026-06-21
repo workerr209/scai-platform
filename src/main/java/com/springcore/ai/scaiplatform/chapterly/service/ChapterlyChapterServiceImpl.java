@@ -90,6 +90,10 @@ public class ChapterlyChapterServiceImpl implements ChapterlyChapterService {
             chapter.setCurrentWordCount(request.getCurrentWordCount());
         }
 
+        if (request.getBody() != null) {
+            chapter.setBody(request.getBody());
+        }
+
         chapter.setProgressPercent(calculateProgressPercent(chapter.getCurrentWordCount(), chapter.getTargetWordCount()));
 
         ChapterlyChapter saved = chapterRepository.save(chapter);
