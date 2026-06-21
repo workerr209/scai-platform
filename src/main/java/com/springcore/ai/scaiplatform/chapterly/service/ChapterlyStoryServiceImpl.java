@@ -17,6 +17,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -162,7 +163,11 @@ public class ChapterlyStoryServiceImpl implements ChapterlyStoryService {
 
     private List<String> sanitizeTags(List<String> tags) {
         if (tags == null) {
-            return List.of();
+            return new LinkedList<>();
+        }
+
+        if (tags.isEmpty()) {
+            return tags;
         }
 
         return tags.stream()
