@@ -14,4 +14,8 @@ public interface ChapterlyChapterNoteRepository extends JpaRepository<ChapterlyC
     List<ChapterlyChapterNote> findTop5ByStoryIdAndOwnerIdOrderByUpdatedAtDesc(Long storyId, Long ownerId);
 
     Optional<ChapterlyChapterNote> findByIdAndOwnerId(Long id, Long ownerId);
+
+    void deleteByChapterIdAndOwnerId(Long chapterId, Long ownerId);
+
+    void deleteByStoryIdAndOwnerId(Long storyId, Long ownerId);
 }

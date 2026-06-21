@@ -10,7 +10,11 @@ import com.springcore.ai.scaiplatform.chapterly.dto.CreateChapterlyStoryRequest;
 import com.springcore.ai.scaiplatform.chapterly.dto.UpdateChapterlyStoryRequest;
 import com.springcore.ai.scaiplatform.chapterly.entity.ChapterlyStory;
 import com.springcore.ai.scaiplatform.chapterly.messaging.ChapterlyEventPublisher;
+import com.springcore.ai.scaiplatform.chapterly.repository.ChapterlyChapterNoteRepository;
+import com.springcore.ai.scaiplatform.chapterly.repository.ChapterlyChapterRepository;
 import com.springcore.ai.scaiplatform.chapterly.repository.ChapterlyStoryRepository;
+import com.springcore.ai.scaiplatform.chapterly.repository.ChapterlyWritingEntryRepository;
+import com.springcore.ai.scaiplatform.chapterly.repository.ChapterlyWritingGoalRepository;
 import com.springcore.ai.scaiplatform.core.entity.User;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
@@ -27,6 +31,10 @@ import java.util.Objects;
 public class ChapterlyStoryServiceImpl implements ChapterlyStoryService {
 
     private final ChapterlyStoryRepository storyRepository;
+    private final ChapterlyChapterRepository chapterRepository;
+    private final ChapterlyChapterNoteRepository noteRepository;
+    private final ChapterlyWritingEntryRepository entryRepository;
+    private final ChapterlyWritingGoalRepository goalRepository;
     private final ChapterlyOwnershipService ownershipService;
     private final ChapterlyEventPublisher eventPublisher;
 
@@ -63,8 +71,6 @@ public class ChapterlyStoryServiceImpl implements ChapterlyStoryService {
                 .visibility(defaultIfNull(request.getVisibility(), ChapterlyStoryVisibility.PRIVATE))
                 .targetWordCount(request.getTargetWordCount())
                 .dailyWordTarget(request.getDailyWordTarget())
-                .currentWordCount(0)
-                .progressPercent(0)
                 .privateNote(request.getPrivateNote())
                 .build();
         story.setOwner(owner);
@@ -82,17 +88,9 @@ public class ChapterlyStoryServiceImpl implements ChapterlyStoryService {
             story.setTitle(request.getTitle().trim());
         }
 
-        if (request.getSummary() != null) {
-            story.setSummary(request.getSummary());
-        }
-
-        if (request.getPenName() != null) {
-            story.setPenName(trimToNull(request.getPenName()));
-        }
-
-        if (request.getGenre() != null) {
-            story.setGenre(trimToNull(request.getGenre()));
-        }
+        story.setSummary(trimToNull(request.getSummary()));
+        story.setPenName(trimToNull(request.getPenName()));
+        story.setGenre(trimToNull(request.getGenre()));
 
         if (request.getTags() != null) {
             story.setTags(sanitizeTags(request.getTags()));
@@ -122,23 +120,10 @@ public class ChapterlyStoryServiceImpl implements ChapterlyStoryService {
             story.setVisibility(request.getVisibility());
         }
 
-        if (request.getTargetWordCount() != null) {
-            story.setTargetWordCount(request.getTargetWordCount());
-        }
+        story.setTargetWordCount(request.getTargetWordCount());
+        story.setDailyWordTarget(request.getDailyWordTarget());
 
-        if (request.getDailyWordTarget() != null) {
-            story.setDailyWordTarget(request.getDailyWordTarget());
-        }
-
-        if (request.getCurrentWordCount() != null) {
-            story.setCurrentWordCount(request.getCurrentWordCount());
-        }
-
-        if (request.getPrivateNote() != null) {
-            story.setPrivateNote(request.getPrivateNote());
-        }
-
-        story.setProgressPercent(calculateProgressPercent(story.getCurrentWordCount(), story.getTargetWordCount()));
+        story.setPrivateNote(trimToNull(request.getPrivateNote()));
 
         ChapterlyStory saved = storyRepository.save(story);
         publishStoryPublishedIfNeeded(ownerUserId, previousStatus, saved);
@@ -150,6 +135,10 @@ public class ChapterlyStoryServiceImpl implements ChapterlyStoryService {
     @Transactional
     public void deleteStory(Long ownerUserId, Long storyId) {
         ChapterlyStory story = ownershipService.requireStory(storyId, ownerUserId);
+        entryRepository.deleteByStoryIdAndOwnerId(storyId, ownerUserId);
+        goalRepository.deleteByStoryIdAndOwnerId(storyId, ownerUserId);
+        noteRepository.deleteByStoryIdAndOwnerId(storyId, ownerUserId);
+        chapterRepository.deleteByStoryIdAndOwnerId(storyId, ownerUserId);
         storyRepository.delete(story);
     }
 

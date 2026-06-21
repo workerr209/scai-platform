@@ -25,4 +25,8 @@ public interface ChapterlyWritingGoalRepository extends JpaRepository<ChapterlyW
     );
 
     Optional<ChapterlyWritingGoal> findByIdAndOwnerId(Long id, Long ownerId);
+
+    void deleteByChapterIdAndOwnerId(Long chapterId, Long ownerId);
+
+    void deleteByStoryIdAndOwnerId(Long storyId, Long ownerId);
 }

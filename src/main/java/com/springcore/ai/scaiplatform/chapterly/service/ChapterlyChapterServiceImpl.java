@@ -9,6 +9,9 @@ import com.springcore.ai.scaiplatform.chapterly.entity.ChapterlyChapter;
 import com.springcore.ai.scaiplatform.chapterly.entity.ChapterlyStory;
 import com.springcore.ai.scaiplatform.chapterly.messaging.ChapterlyEventPublisher;
 import com.springcore.ai.scaiplatform.chapterly.repository.ChapterlyChapterRepository;
+import com.springcore.ai.scaiplatform.chapterly.repository.ChapterlyChapterNoteRepository;
+import com.springcore.ai.scaiplatform.chapterly.repository.ChapterlyWritingEntryRepository;
+import com.springcore.ai.scaiplatform.chapterly.repository.ChapterlyWritingGoalRepository;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
@@ -16,12 +19,16 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
 public class ChapterlyChapterServiceImpl implements ChapterlyChapterService {
 
     private final ChapterlyChapterRepository chapterRepository;
+    private final ChapterlyChapterNoteRepository noteRepository;
+    private final ChapterlyWritingEntryRepository entryRepository;
+    private final ChapterlyWritingGoalRepository goalRepository;
     private final ChapterlyOwnershipService ownershipService;
     private final ChapterlyEventPublisher eventPublisher;
 
@@ -87,7 +94,7 @@ public class ChapterlyChapterServiceImpl implements ChapterlyChapterService {
         }
 
         if (request.getCurrentWordCount() != null) {
-            chapter.setCurrentWordCount(request.getCurrentWordCount());
+            applyWordCountDelta(chapter, request.getCurrentWordCount());
         }
 
         if (request.getBody() != null) {
@@ -106,15 +113,16 @@ public class ChapterlyChapterServiceImpl implements ChapterlyChapterService {
     @Transactional
     public void deleteChapter(Long ownerUserId, Long storyId, Long chapterId) {
         ChapterlyChapter chapter = ownershipService.requireChapter(storyId, chapterId, ownerUserId);
+        applyWordCountDelta(chapter, 0);
+        entryRepository.deleteByChapterIdAndOwnerId(chapterId, ownerUserId);
+        goalRepository.deleteByChapterIdAndOwnerId(chapterId, ownerUserId);
+        noteRepository.deleteByChapterIdAndOwnerId(chapterId, ownerUserId);
         chapterRepository.delete(chapter);
     }
 
     private Integer resolveChapterNumber(Long storyId, Long ownerUserId, Integer requestedChapterNumber) {
-        if (requestedChapterNumber != null) {
-            return requestedChapterNumber;
-        }
+        return Objects.requireNonNullElseGet(requestedChapterNumber, () -> (int) chapterRepository.countByStoryIdAndOwnerId(storyId, ownerUserId) + 1);
 
-        return (int) chapterRepository.countByStoryIdAndOwnerId(storyId, ownerUserId) + 1;
     }
 
     private Integer calculateProgressPercent(Integer currentWordCount, Integer targetWordCount) {
@@ -123,6 +131,16 @@ public class ChapterlyChapterServiceImpl implements ChapterlyChapterService {
         }
 
         return Math.min(100, (int) Math.round((currentWordCount * 100.0) / targetWordCount));
+    }
+
+    private void applyWordCountDelta(ChapterlyChapter chapter, Integer nextChapterWordCount) {
+        int nextWordCount = defaultZero(nextChapterWordCount);
+        chapter.setCurrentWordCount(nextWordCount);
+        chapter.setProgressPercent(calculateProgressPercent(nextWordCount, chapter.getTargetWordCount()));
+    }
+
+    private int defaultZero(Integer value) {
+        return value == null ? 0 : value;
     }
 
     private void publishChapterPublishedIfNeeded(Long ownerUserId, ChapterlyChapterStatus previousStatus, ChapterlyChapter chapter) {

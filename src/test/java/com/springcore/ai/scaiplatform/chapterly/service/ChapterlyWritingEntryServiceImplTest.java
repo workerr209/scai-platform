@@ -1,6 +1,7 @@
 package com.springcore.ai.scaiplatform.chapterly.service;
 
 import com.springcore.ai.scaiplatform.chapterly.dto.CreateChapterlyWritingEntryRequest;
+import com.springcore.ai.scaiplatform.chapterly.dto.ChapterlyWritingEntryResponse;
 import com.springcore.ai.scaiplatform.chapterly.dto.UpdateChapterlyWritingEntryRequest;
 import com.springcore.ai.scaiplatform.chapterly.entity.ChapterlyChapter;
 import com.springcore.ai.scaiplatform.chapterly.entity.ChapterlyStory;
@@ -71,6 +72,29 @@ class ChapterlyWritingEntryServiceImplTest {
         assertThat(story.getProgressPercent()).isEqualTo(30);
         assertThat(chapter.getCurrentWordCount()).isEqualTo(250);
         assertThat(chapter.getProgressPercent()).isEqualTo(50);
+    }
+
+    @Test
+    void createEntryCanSkipManuscriptWordTotals() {
+        User owner = User.builder().id(7L).email("writer@example.com").build();
+        ChapterlyStory story = story(owner, 11L, 100);
+        ChapterlyChapter chapter = chapter(owner, story, 22L, 50);
+        when(ownershipService.requireUser(7L)).thenReturn(owner);
+        when(ownershipService.requireChapter(11L, 22L, 7L)).thenReturn(chapter);
+        when(entryRepository.save(any(ChapterlyWritingEntry.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        ChapterlyWritingEntryResponse response = service.createEntry(7L, CreateChapterlyWritingEntryRequest.builder()
+                .storyId(11L)
+                .chapterId(22L)
+                .entryDate(LocalDate.of(2026, 6, 21))
+                .wordsWritten(200)
+                .minutesSpent(30)
+                .applyToManuscriptTotals(false)
+                .build());
+
+        assertThat(story.getCurrentWordCount()).isEqualTo(100);
+        assertThat(chapter.getCurrentWordCount()).isEqualTo(50);
+        assertThat(response.getApplyToManuscriptTotals()).isFalse();
     }
 
     @Test

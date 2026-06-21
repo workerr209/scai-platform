@@ -22,6 +22,7 @@ public class ChapterlyWritingEntryResponse {
     private Integer wordsWritten;
     private Integer minutesSpent;
     private Integer notesAdded;
+    private Boolean applyToManuscriptTotals;
     private Instant createdAt;
     private Instant updatedAt;
 
@@ -35,6 +36,7 @@ public class ChapterlyWritingEntryResponse {
                 .wordsWritten(entry.getWordsWritten())
                 .minutesSpent(entry.getMinutesSpent())
                 .notesAdded(entry.getNotesAdded())
+                .applyToManuscriptTotals(entry.getApplyToManuscriptTotals())
                 .createdAt(entry.getCreatedAt())
                 .updatedAt(entry.getUpdatedAt())
                 .build();

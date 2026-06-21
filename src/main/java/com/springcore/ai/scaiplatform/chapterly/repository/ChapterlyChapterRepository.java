@@ -18,4 +18,6 @@ public interface ChapterlyChapterRepository extends JpaRepository<ChapterlyChapt
     boolean existsByIdAndOwnerId(Long id, Long ownerId);
 
     long countByStoryIdAndOwnerId(Long storyId, Long ownerId);
+
+    void deleteByStoryIdAndOwnerId(Long storyId, Long ownerId);
 }

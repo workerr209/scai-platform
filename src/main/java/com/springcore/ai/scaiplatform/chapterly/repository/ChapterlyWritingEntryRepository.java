@@ -23,4 +23,8 @@ public interface ChapterlyWritingEntryRepository extends JpaRepository<Chapterly
     List<ChapterlyWritingEntry> findByChapterIdAndOwnerIdOrderByEntryDateDesc(Long chapterId, Long ownerId);
 
     Optional<ChapterlyWritingEntry> findByIdAndOwnerId(Long id, Long ownerId);
+
+    void deleteByChapterIdAndOwnerId(Long chapterId, Long ownerId);
+
+    void deleteByStoryIdAndOwnerId(Long storyId, Long ownerId);
 }

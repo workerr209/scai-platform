@@ -21,6 +21,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.Formula;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -81,7 +82,10 @@ public class ChapterlyStory extends ChapterlyOwnedEntity {
 
     private Integer targetWordCount;
     private Integer dailyWordTarget;
+
+    @Formula("(SELECT COALESCE(SUM(c.currentWordCount), 0) FROM chapterly_chapter c WHERE c.story_id = id AND c.owner_user_id = owner_user_id)")
     private Integer currentWordCount;
+
     private Integer progressPercent;
 
     @Column(columnDefinition = "TEXT")
@@ -103,9 +107,6 @@ public class ChapterlyStory extends ChapterlyOwnedEntity {
         }
         if (tags == null) {
             tags = new ArrayList<>();
-        }
-        if (currentWordCount == null) {
-            currentWordCount = 0;
         }
         if (progressPercent == null) {
             progressPercent = 0;

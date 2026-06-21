@@ -25,4 +25,6 @@ public class UpdateChapterlyWritingEntryRequest {
 
     @PositiveOrZero
     private Integer notesAdded;
+
+    private Boolean applyToManuscriptTotals;
 }

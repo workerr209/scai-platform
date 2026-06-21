@@ -54,6 +54,7 @@ public class ChapterlyWritingEntry extends ChapterlyOwnedEntity {
     private Integer wordsWritten;
     private Integer minutesSpent;
     private Integer notesAdded;
+    private Boolean applyToManuscriptTotals;
 
     @PrePersist
     void entryPrePersist() {
@@ -65,6 +66,9 @@ public class ChapterlyWritingEntry extends ChapterlyOwnedEntity {
         }
         if (notesAdded == null) {
             notesAdded = 0;
+        }
+        if (applyToManuscriptTotals == null) {
+            applyToManuscriptTotals = true;
         }
     }
 }

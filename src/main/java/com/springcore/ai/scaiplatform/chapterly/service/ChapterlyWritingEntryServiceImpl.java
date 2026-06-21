@@ -55,6 +55,7 @@ public class ChapterlyWritingEntryServiceImpl implements ChapterlyWritingEntrySe
         User owner = ownershipService.requireUser(ownerUserId);
         EntryTargets targets = resolveTargets(ownerUserId, request.getStoryId(), request.getChapterId());
         int wordsWritten = defaultZero(request.getWordsWritten());
+        boolean applyToManuscriptTotals = defaultTrue(request.getApplyToManuscriptTotals());
 
         ChapterlyWritingEntry entry = ChapterlyWritingEntry.builder()
                 .story(targets.story())
@@ -63,9 +64,12 @@ public class ChapterlyWritingEntryServiceImpl implements ChapterlyWritingEntrySe
                 .wordsWritten(wordsWritten)
                 .minutesSpent(defaultZero(request.getMinutesSpent()))
                 .notesAdded(defaultZero(request.getNotesAdded()))
+                .applyToManuscriptTotals(applyToManuscriptTotals)
                 .build();
         entry.setOwner(owner);
-        applyWordDelta(targets.story(), targets.chapter(), wordsWritten);
+        if (applyToManuscriptTotals) {
+            applyWordDelta(targets.chapter(), wordsWritten);
+        }
 
         return ChapterlyWritingEntryResponse.from(entryRepository.save(entry));
     }
@@ -74,9 +78,9 @@ public class ChapterlyWritingEntryServiceImpl implements ChapterlyWritingEntrySe
     @Transactional
     public ChapterlyWritingEntryResponse updateEntry(Long ownerUserId, Long entryId, UpdateChapterlyWritingEntryRequest request) {
         ChapterlyWritingEntry entry = requireEntry(ownerUserId, entryId);
-        ChapterlyStory previousStory = entry.getStory();
         ChapterlyChapter previousChapter = entry.getChapter();
         int previousWords = defaultZero(entry.getWordsWritten());
+        boolean previousApplyToManuscriptTotals = defaultTrue(entry.getApplyToManuscriptTotals());
 
         Long nextStoryId = request.getStoryId() == null
                 ? (entry.getStory() == null ? null : entry.getStory().getId())
@@ -86,12 +90,20 @@ public class ChapterlyWritingEntryServiceImpl implements ChapterlyWritingEntrySe
                 : request.getChapterId();
         EntryTargets targets = resolveTargets(ownerUserId, nextStoryId, nextChapterId);
         int nextWords = request.getWordsWritten() == null ? previousWords : request.getWordsWritten();
+        boolean nextApplyToManuscriptTotals = request.getApplyToManuscriptTotals() == null
+                ? previousApplyToManuscriptTotals
+                : request.getApplyToManuscriptTotals();
 
-        applyWordDelta(previousStory, previousChapter, -previousWords);
-        applyWordDelta(targets.story(), targets.chapter(), nextWords);
+        if (previousApplyToManuscriptTotals) {
+            applyWordDelta(previousChapter, -previousWords);
+        }
+        if (nextApplyToManuscriptTotals) {
+            applyWordDelta(targets.chapter(), nextWords);
+        }
 
         entry.setStory(targets.story());
         entry.setChapter(targets.chapter());
+        entry.setApplyToManuscriptTotals(nextApplyToManuscriptTotals);
         if (request.getEntryDate() != null) {
             entry.setEntryDate(request.getEntryDate());
         }
@@ -110,7 +122,9 @@ public class ChapterlyWritingEntryServiceImpl implements ChapterlyWritingEntrySe
     @Transactional
     public void deleteEntry(Long ownerUserId, Long entryId) {
         ChapterlyWritingEntry entry = requireEntry(ownerUserId, entryId);
-        applyWordDelta(entry.getStory(), entry.getChapter(), -defaultZero(entry.getWordsWritten()));
+        if (defaultTrue(entry.getApplyToManuscriptTotals())) {
+            applyWordDelta(entry.getChapter(), -defaultZero(entry.getWordsWritten()));
+        }
         entryRepository.delete(entry);
     }
 
@@ -136,13 +150,7 @@ public class ChapterlyWritingEntryServiceImpl implements ChapterlyWritingEntrySe
         return new EntryTargets(null, null);
     }
 
-    private void applyWordDelta(ChapterlyStory story, ChapterlyChapter chapter, int delta) {
-        if (story != null) {
-            int nextStoryWords = Math.max(0, defaultZero(story.getCurrentWordCount()) + delta);
-            story.setCurrentWordCount(nextStoryWords);
-            story.setProgressPercent(calculateProgressPercent(nextStoryWords, story.getTargetWordCount()));
-        }
-
+    private void applyWordDelta(ChapterlyChapter chapter, int delta) {
         if (chapter != null) {
             int nextChapterWords = Math.max(0, defaultZero(chapter.getCurrentWordCount()) + delta);
             chapter.setCurrentWordCount(nextChapterWords);
@@ -160,6 +168,10 @@ public class ChapterlyWritingEntryServiceImpl implements ChapterlyWritingEntrySe
 
     private int defaultZero(Integer value) {
         return value == null ? 0 : value;
+    }
+
+    private boolean defaultTrue(Boolean value) {
+        return value == null || value;
     }
 
     private record EntryTargets(ChapterlyStory story, ChapterlyChapter chapter) {

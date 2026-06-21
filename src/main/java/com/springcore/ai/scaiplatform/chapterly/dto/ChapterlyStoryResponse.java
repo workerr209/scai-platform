@@ -40,6 +40,7 @@ public class ChapterlyStoryResponse {
     private Instant updatedAt;
 
     public static ChapterlyStoryResponse from(ChapterlyStory story) {
+        int wordCount = story.getCurrentWordCount() == null ? 0 : story.getCurrentWordCount();
         return ChapterlyStoryResponse.builder()
                 .id(story.getId())
                 .ownerUserId(story.getOwner().getId())
@@ -56,11 +57,16 @@ public class ChapterlyStoryResponse {
                 .visibility(story.getVisibility())
                 .targetWordCount(story.getTargetWordCount())
                 .dailyWordTarget(story.getDailyWordTarget())
-                .currentWordCount(story.getCurrentWordCount())
-                .progressPercent(story.getProgressPercent())
+                .currentWordCount(wordCount)
+                .progressPercent(calculateProgressPercent(wordCount, story.getTargetWordCount()))
                 .privateNote(story.getPrivateNote())
                 .createdAt(story.getCreatedAt())
                 .updatedAt(story.getUpdatedAt())
                 .build();
+    }
+
+    private static int calculateProgressPercent(int currentWordCount, Integer targetWordCount) {
+        if (targetWordCount == null || targetWordCount <= 0) return 0;
+        return Math.min(100, (int) Math.round((currentWordCount * 100.0) / targetWordCount));
     }
 }
