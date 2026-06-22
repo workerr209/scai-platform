@@ -4,7 +4,7 @@ import com.springcore.ai.scaiplatform.chapterly.dto.ChapterlyInboxConversationRe
 import com.springcore.ai.scaiplatform.chapterly.dto.ChapterlyInboxMessageResponse;
 import com.springcore.ai.scaiplatform.chapterly.dto.ChapterlyInboxPreviewResponse;
 import com.springcore.ai.scaiplatform.chapterly.dto.SendChapterlyInboxMessageRequest;
-import com.springcore.ai.scaiplatform.chapterly.service.ChapterlyInboxService;
+import com.springcore.ai.scaiplatform.chapterly.service.api.ChapterlyInboxService;
 import com.springcore.ai.scaiplatform.core.dto.UserPrincipal;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

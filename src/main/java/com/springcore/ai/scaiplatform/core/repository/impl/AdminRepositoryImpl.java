@@ -1,7 +1,6 @@
 package com.springcore.ai.scaiplatform.core.repository.impl;
 
 import com.springcore.ai.scaiplatform.core.domain.mapping.RoleMappingMenu;
-import com.springcore.ai.scaiplatform.core.entity.GroupMenu;
 import com.springcore.ai.scaiplatform.core.entity.RecordType;
 import com.springcore.ai.scaiplatform.core.repository.api.AdminRepository;
 import jakarta.persistence.EntityManager;
@@ -20,11 +19,6 @@ public class AdminRepositoryImpl implements AdminRepository {
 	
 	@PersistenceContext // or even @Autowired
     private EntityManager em;
-
-	@Override
-	public List<GroupMenu> findAllGroupMenu() {
-		return null;
-	}
 
 	@Override
 //	@Transactional /*This ANotation use for the DB table that not have field name "ID" , Patchara K.*/

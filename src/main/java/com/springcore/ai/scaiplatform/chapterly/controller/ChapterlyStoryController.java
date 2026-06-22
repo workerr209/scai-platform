@@ -3,7 +3,7 @@ package com.springcore.ai.scaiplatform.chapterly.controller;
 import com.springcore.ai.scaiplatform.chapterly.dto.ChapterlyStoryResponse;
 import com.springcore.ai.scaiplatform.chapterly.dto.CreateChapterlyStoryRequest;
 import com.springcore.ai.scaiplatform.chapterly.dto.UpdateChapterlyStoryRequest;
-import com.springcore.ai.scaiplatform.chapterly.service.ChapterlyStoryService;
+import com.springcore.ai.scaiplatform.chapterly.service.api.ChapterlyStoryService;
 import com.springcore.ai.scaiplatform.core.dto.UserPrincipal;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

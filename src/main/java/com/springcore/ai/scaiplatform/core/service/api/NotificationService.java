@@ -12,8 +12,6 @@ public interface NotificationService {
 
     void sendToUser(Long userId, NotificationDTO payload);
 
-    // void sendToUsers(List<Long> userIds, NotificationDTO payload);
-
     List<Notification> getHistory(Long userId);
 
     void markAsRead(Long id);

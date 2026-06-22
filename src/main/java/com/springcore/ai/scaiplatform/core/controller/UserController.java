@@ -1,23 +1,18 @@
 package com.springcore.ai.scaiplatform.core.controller;
 
-import com.springcore.ai.scaiplatform.core.dto.ManuByUserDTO;
 import com.springcore.ai.scaiplatform.core.dto.UpdateProfileRequest;
 import com.springcore.ai.scaiplatform.core.dto.UserPrincipal;
-import com.springcore.ai.scaiplatform.core.entity.GroupMenu;
 import com.springcore.ai.scaiplatform.core.entity.User;
-import com.springcore.ai.scaiplatform.core.service.api.AdminService;
 import com.springcore.ai.scaiplatform.core.service.api.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -28,7 +23,6 @@ import java.util.List;
 public class UserController {
 
     private final UserService userService;
-    private final AdminService adminService;
 
     @GetMapping("/me")
     public ResponseEntity<User> getCurrentUser(@AuthenticationPrincipal UserPrincipal principal) {
@@ -51,17 +45,6 @@ public class UserController {
     @PutMapping("/profile")
     public ResponseEntity<User> updateProfile(@RequestBody UpdateProfileRequest request, @AuthenticationPrincipal UserPrincipal principal) {
         return ResponseEntity.ok(userService.updateProfile(principal.getId(), request));
-    }
-
-    @GetMapping("/getMenuByUsername")
-    public ResponseEntity<List<ManuByUserDTO>> listMenuByUsername() {
-        String username = SecurityContextHolder.getContext().getAuthentication().getName();
-        return ResponseEntity.ok(adminService.listMenuByUsername(username));
-    }
-
-    @GetMapping("/getAllAllowMenu")
-    public @ResponseBody List<GroupMenu> getAllAllowMenu(String username) {
-        return adminService.findAllAllowMenuByUsername(username);
     }
 
 }

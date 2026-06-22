@@ -8,6 +8,7 @@ import com.springcore.ai.scaiplatform.chapterly.messaging.ChapterlyEventPublishe
 import com.springcore.ai.scaiplatform.chapterly.repository.ChapterlyInboxConversationRepository;
 import com.springcore.ai.scaiplatform.chapterly.repository.ChapterlyInboxMessageRepository;
 import com.springcore.ai.scaiplatform.chapterly.repository.ChapterlyProfileRepository;
+import com.springcore.ai.scaiplatform.chapterly.service.impl.ChapterlyInboxServiceImpl;
 import com.springcore.ai.scaiplatform.core.entity.User;
 import com.springcore.ai.scaiplatform.core.repository.api.UserRepository;
 import jakarta.validation.ValidationException;

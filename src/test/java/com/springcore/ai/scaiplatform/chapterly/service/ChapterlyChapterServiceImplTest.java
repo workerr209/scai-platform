@@ -5,6 +5,7 @@ import com.springcore.ai.scaiplatform.chapterly.entity.ChapterlyChapter;
 import com.springcore.ai.scaiplatform.chapterly.entity.ChapterlyStory;
 import com.springcore.ai.scaiplatform.chapterly.messaging.ChapterlyEventPublisher;
 import com.springcore.ai.scaiplatform.chapterly.repository.ChapterlyChapterRepository;
+import com.springcore.ai.scaiplatform.chapterly.service.impl.ChapterlyChapterServiceImpl;
 import com.springcore.ai.scaiplatform.core.entity.User;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

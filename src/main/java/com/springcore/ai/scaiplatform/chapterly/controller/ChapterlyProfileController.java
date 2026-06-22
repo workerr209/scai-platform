@@ -4,7 +4,7 @@ import com.springcore.ai.scaiplatform.chapterly.dto.ChapterlyProfileResponse;
 import com.springcore.ai.scaiplatform.chapterly.dto.CompleteOnboardingRequest;
 import com.springcore.ai.scaiplatform.chapterly.dto.UpdateChapterlyProfileRequest;
 import com.springcore.ai.scaiplatform.chapterly.dto.UpdateLastActiveModeRequest;
-import com.springcore.ai.scaiplatform.chapterly.service.ChapterlyProfileService;
+import com.springcore.ai.scaiplatform.chapterly.service.api.ChapterlyProfileService;
 import com.springcore.ai.scaiplatform.core.dto.UserPrincipal;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

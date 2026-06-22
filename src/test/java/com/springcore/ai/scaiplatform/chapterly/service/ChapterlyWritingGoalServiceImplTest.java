@@ -7,6 +7,7 @@ import com.springcore.ai.scaiplatform.chapterly.dto.CreateChapterlyWritingGoalRe
 import com.springcore.ai.scaiplatform.chapterly.entity.ChapterlyStory;
 import com.springcore.ai.scaiplatform.chapterly.entity.ChapterlyWritingGoal;
 import com.springcore.ai.scaiplatform.chapterly.repository.ChapterlyWritingGoalRepository;
+import com.springcore.ai.scaiplatform.chapterly.service.impl.ChapterlyWritingGoalServiceImpl;
 import com.springcore.ai.scaiplatform.core.entity.User;
 import jakarta.validation.ValidationException;
 import org.junit.jupiter.api.Test;
