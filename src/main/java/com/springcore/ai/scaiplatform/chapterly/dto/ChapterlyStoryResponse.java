@@ -28,7 +28,6 @@ public class ChapterlyStoryResponse {
     private ChapterlyAudienceRating audienceRating;
     private String summary;
     private String coverFileId;
-    private String coverUrl;
     private ChapterlyStoryStatus status;
     private ChapterlyStoryVisibility visibility;
     private Integer targetWordCount;
@@ -52,7 +51,6 @@ public class ChapterlyStoryResponse {
                 .audienceRating(story.getAudienceRating())
                 .summary(story.getSummary())
                 .coverFileId(story.getCoverFileId())
-                .coverUrl(story.getCoverUrl())
                 .status(story.getStatus())
                 .visibility(story.getVisibility())
                 .targetWordCount(story.getTargetWordCount())

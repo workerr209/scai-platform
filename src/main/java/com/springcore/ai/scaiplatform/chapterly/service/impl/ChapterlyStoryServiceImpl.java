@@ -68,7 +68,6 @@ public class ChapterlyStoryServiceImpl implements ChapterlyStoryService {
                 .audienceRating(defaultIfNull(request.getAudienceRating(), ChapterlyAudienceRating.TEEN))
                 .summary(request.getSummary())
                 .coverFileId(request.getCoverFileId())
-                .coverUrl(request.getCoverUrl())
                 .status(defaultIfNull(request.getStatus(), ChapterlyStoryStatus.DRAFT))
                 .visibility(defaultIfNull(request.getVisibility(), ChapterlyStoryVisibility.PRIVATE))
                 .targetWordCount(request.getTargetWordCount())
@@ -109,10 +108,6 @@ public class ChapterlyStoryServiceImpl implements ChapterlyStoryService {
 
         if (request.getCoverFileId() != null) {
             story.setCoverFileId(request.getCoverFileId());
-        }
-
-        if (request.getCoverUrl() != null) {
-            story.setCoverUrl(request.getCoverUrl());
         }
 
         if (request.getStatus() != null) {

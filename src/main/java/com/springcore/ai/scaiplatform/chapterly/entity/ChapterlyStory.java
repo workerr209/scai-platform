@@ -69,9 +69,6 @@ public class ChapterlyStory extends ChapterlyOwnedEntity {
     @Column(length = 120)
     private String coverFileId;
 
-    @Column(columnDefinition = "TEXT")
-    private String coverUrl;
-
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private ChapterlyStoryStatus status;

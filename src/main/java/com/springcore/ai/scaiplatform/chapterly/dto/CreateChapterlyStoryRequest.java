@@ -40,8 +40,6 @@ public class CreateChapterlyStoryRequest {
     @Size(max = 120)
     private String coverFileId;
 
-    private String coverUrl;
-
     private ChapterlyStoryStatus status;
 
     private ChapterlyStoryVisibility visibility;
