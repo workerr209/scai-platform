@@ -95,7 +95,8 @@ public class ChapterlyStoryServiceImpl implements ChapterlyStoryService {
         story.setGenre(trimToNull(request.getGenre()));
 
         if (request.getTags() != null) {
-            story.setTags(sanitizeTags(request.getTags()));
+            story.getTags().clear();
+            story.getTags().addAll(sanitizeTags(request.getTags()));
         }
 
         if (request.getLanguage() != null) {
