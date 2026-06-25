@@ -21,4 +21,18 @@ public class GlobalExceptionHandler {
         errorResponse.put("message", ex.getMessage());
         return new ResponseEntity<>(errorResponse, HttpStatus.CONFLICT);
     }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<Map<String, Object>> handleIllegalArgumentException(IllegalArgumentException ex) {
+        HttpStatus status = ex.getMessage() != null && ex.getMessage().startsWith("Email already registered:")
+                ? HttpStatus.CONFLICT
+                : HttpStatus.BAD_REQUEST;
+
+        Map<String, Object> errorResponse = new LinkedHashMap<>();
+        errorResponse.put("timestamp", LocalDateTime.now());
+        errorResponse.put("status", status.value());
+        errorResponse.put("error", status.getReasonPhrase());
+        errorResponse.put("message", ex.getMessage());
+        return new ResponseEntity<>(errorResponse, status);
+    }
 }

@@ -28,6 +28,9 @@ import java.util.List;
 @EnableMethodSecurity
 public class SecurityConfig {
 
+    private static final String LOGIN_PATH = "/api/auth/login";
+    private static final String PIN_LOGIN_PATH = "/api/auth/login/pin";
+
     private final UserLoggingFilter userLoggingFilter;
     private final UserDetailsService userDetailsService;
     private final JwtTokenProvider jwtTokenProvider;
@@ -55,13 +58,16 @@ public class SecurityConfig {
                         .authenticationEntryPoint((request, response, authException) -> {
                             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                             response.setContentType("application/json");
+                            String path = request.getRequestURI();
+                            String message = LOGIN_PATH.equals(path)
+                                    ? "Invalid email or password."
+                                    : PIN_LOGIN_PATH.equals(path)
+                                            ? "Invalid email or PIN."
+                                            : "Full authentication is required to access this resource";
 
-                            String jsonResponse = """
-                                    {
-                                        "error": "Unauthorized",
-                                        "message": "Full authentication is required to access this resource"
-                                    }
-                                    """;
+                            String jsonResponse = String.format("""
+                                    {"error":"Unauthorized","message":"%s"}
+                                    """, message);
                             response.getWriter().write(jsonResponse);
                         })
                         // Handle 403 Forbidden (Authenticated user but insufficient permissions)
